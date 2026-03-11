@@ -1,0 +1,13 @@
+Tipo de Proyecto,Modelo Recomendado,Modo Recomendado,Velocidad,Calidad,Ejemplo Real,Notas
+Bot / Automatización IA,Claude Opus 4.6 (Thinking),Planning,⭐⭐ Lento,⭐⭐⭐⭐⭐ Máxima,"Bot Cynthia WhatsApp, integraciones API",Usa Planning porque requiere planificar múltiples archivos y lógica compleja
+Landing Page / Sales Page,Claude Sonnet 4.6 (Thinking),Fast,⭐⭐⭐⭐ Rápido,⭐⭐⭐⭐ Alta,"Onda Media, páginas de venta",Fast porque el diseño se ejecuta directo sin mucha planificación previa
+CRM / Dashboard,Claude Sonnet 4.6 (Thinking),Planning,⭐⭐⭐ Medio,⭐⭐⭐⭐ Alta,"Panel de clientes, métricas de ventas",Planning porque hay múltiples vistas y lógica de datos
+Sistema de Gestión (Gym / Tienda),Claude Sonnet 4.6 (Thinking),Planning,⭐⭐⭐ Medio,⭐⭐⭐⭐ Alta,"Inventario, membresías, pagos",Planning para arquitectura. Si se complica cambiar a Opus
+Debugging Complejo,Claude Opus 4.6 (Thinking),Planning,⭐⭐ Lento,⭐⭐⭐⭐⭐ Máxima,"Errores difíciles, bugs de lógica",Planning porque necesita analizar antes de actuar
+Consulta Rápida de Código,Gemini 3 Flash,Fast,⭐⭐⭐⭐⭐ Ultra rápido,⭐⭐⭐ Buena,"¿Cómo hago X?, ¿Qué hace esta función?",Fast porque son respuestas directas sin ejecutar código
+Edición Rápida (cambiar texto / color / precio),Claude Sonnet 4.6 (Thinking),Fast,⭐⭐⭐⭐ Rápido,⭐⭐⭐⭐ Alta,"Cambiar precio en knowledge.txt, ajustar un color",Fast porque es un cambio directo y simple
+Análisis de Proyecto Grande,Gemini 3.1 Pro (High),Planning,⭐⭐⭐ Medio,⭐⭐⭐⭐ Alta,"Leer y entender un proyecto de +50 archivos",Planning + Gemini por su contexto masivo
+Crear API / Backend,Claude Opus 4.6 (Thinking),Planning,⭐⭐ Lento,⭐⭐⭐⭐⭐ Máxima,"REST API, bases de datos, autenticación",Planning para diseñar la arquitectura completa
+Prototipo Rápido / MVP,Claude Sonnet 4.6 (Thinking),Fast,⭐⭐⭐⭐ Rápido,⭐⭐⭐⭐ Alta,"Demo rápida para un cliente",Fast para mover rápido y tener algo visual pronto
+Refactorización de Código,Claude Opus 4.6 (Thinking),Planning,⭐⭐ Lento,⭐⭐⭐⭐⭐ Máxima,"Reorganizar código existente sin romper nada",Planning para analizar dependencias antes de mover código
+Diseño UI/UX Complejo,Claude Sonnet 4.6 (Thinking),Planning,⭐⭐⭐ Medio,⭐⭐⭐⭐ Alta,"Interfaces con animaciones y múltiples estados",Planning para planificar componentes y flujo
