@@ -27,6 +27,17 @@ async function main() {
     app.use(express.json());
 
     app.post("/webhook", async (req, res) => {
+        // Validar token secreto del webhook
+        const webhookSecret = process.env.WEBHOOK_SECRET;
+        if (webhookSecret) {
+            const token = req.headers["x-webhook-secret"] || req.query.token;
+            if (token !== webhookSecret) {
+                console.log("[WhatsApp] ⛔ Webhook rechazado: token inválido");
+                res.status(401).send("Unauthorized");
+                return;
+            }
+        }
+
         // Return 200 early to Evolution
         res.status(200).send("OK");
 
