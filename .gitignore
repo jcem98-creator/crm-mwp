@@ -1,0 +1,10 @@
+node_modules/
+dist/
+memory.db
+.env
+*.log
+.DS_Store
+ngrok
+ngrok.zip
+.npm-cache/
+service-account.json

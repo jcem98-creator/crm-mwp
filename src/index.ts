@@ -1,0 +1,168 @@
+import express from "express";
+import cors from "cors";
+import { config, validateConfig } from "./config.js";
+import { runAgentLoop } from "./agent/loop.js";
+import { memoryDb } from "./db/index.js";
+import { sendText, sendPresence } from "./whatsapp.js";
+
+// Estructuras de datos para el encolamiento (Debounce)
+const messageQueues: Record<string, string[]> = {};
+const messageTimeouts: Record<string, NodeJS.Timeout> = {};
+const masterSwitch: { isOn: boolean } = { isOn: true }; // Start turned on
+const pausedUsers: Record<string, boolean> = {}; // false/true si un asesor está hablando con un cliente
+
+async function main() {
+    console.log("[App] Iniciando OpenGravity con Evolution API...");
+
+    try {
+        validateConfig();
+        console.log("[App] Configuración validada.");
+    } catch (error: any) {
+        console.error("[App] Error de configuración:", error.message);
+        process.exit(1);
+    }
+
+    const app = express();
+    app.use(cors());
+    app.use(express.json());
+
+    app.post("/webhook", async (req, res) => {
+        // Return 200 early to Evolution
+        res.status(200).send("OK");
+
+        const payload = req.body;
+        
+        // Ensure this is a message upsert event
+        if (!payload || !payload.data || !payload.data.message) {
+            return;
+        }
+
+        const msgData = payload.data;
+        const msgInfo = msgData.message;
+        const remoteJid = msgData.key.remoteJid; // eg. 123456789@s.whatsapp.net
+        const fromMe = msgData.key.fromMe;
+        
+        // Extract text depending on message type (conversation, extendedTextMessage, etc)
+        let text = "";
+        if (msgInfo.conversation) {
+            text = msgInfo.conversation;
+        } else if (msgInfo.extendedTextMessage && msgInfo.extendedTextMessage.text) {
+            text = msgInfo.extendedTextMessage.text;
+        }
+
+        if (!text) return;
+
+        // Limpiar el JID para no mostrar @s.whatsapp.net
+        const cleanNumber = remoteJid.split("@")[0];
+
+        console.log(`[WhatsApp] Mensaje de ${cleanNumber} (fromMe: ${fromMe}): ${text}`);
+
+        // Números de administradores autorizados para comandos globales
+        const ADMIN_NUMBERS = ["51992371285"];
+        const isAdmin = ADMIN_NUMBERS.includes(cleanNumber);
+
+        // --- COMANDOS DE ADMIN (desde número admin, no fromMe) ---
+        if (!fromMe && isAdmin) {
+            if (text.trim() === "/apagarbot") {
+                masterSwitch.isOn = false;
+                await sendText(remoteJid, "🤖 Cynthia dice: IA APAGADA GLOBALMENTE. Descansaré hasta que digas /prenderbot.");
+                return;
+            }
+            if (text.trim() === "/prenderbot") {
+                masterSwitch.isOn = true;
+                await sendText(remoteJid, "🤖 Cynthia dice: IA ENCENDIDA GLOBALMENTE. ¡A vender!");
+                return;
+            }
+            // /reset NUMERO - resetear un chat específico desde admin
+            if (text.trim().startsWith("/reset ")) {
+                const targetNumber = text.trim().replace("/reset ", "").replace(/\D/g, "");
+                const targetJid = `${targetNumber}@s.whatsapp.net`;
+                await memoryDb.clearMemory(targetJid);
+                delete pausedUsers[targetJid];
+                await sendText(remoteJid, `🤖 Cynthia dice: Memoria borrada y bot reactivado para ${targetNumber}.`);
+                return;
+            }
+            // /activar NUMERO - reactivar un chat sin borrar memoria
+            if (text.trim().startsWith("/activar ")) {
+                const targetNumber = text.trim().replace("/activar ", "").replace(/\D/g, "");
+                const targetJid = `${targetNumber}@s.whatsapp.net`;
+                delete pausedUsers[targetJid];
+                await sendText(remoteJid, `🤖 Cynthia dice: Bot reactivado para ${targetNumber} (memoria intacta).`);
+                return;
+            }
+        }
+
+        // --- MANEJO DE COMANDOS DESDE EL CELULAR DE LA EMPRESA (fromMe) ---
+        if (fromMe) {
+            if (text.trim() === "/apagarbot") {
+                masterSwitch.isOn = false;
+                await sendText(remoteJid, "🤖 Cynthia dice: IA APAGADA GLOBALMENTE. Descansaré hasta que digas /prenderbot.");
+                return;
+            }
+            if (text.trim() === "/prenderbot") {
+                masterSwitch.isOn = true;
+                await sendText(remoteJid, "🤖 Cynthia dice: IA ENCENDIDA GLOBALMENTE. ¡A vender!");
+                return;
+            }
+            if (text.trim() === "/activar") {
+                delete pausedUsers[remoteJid];
+                await sendText(remoteJid, "🤖 Cynthia dice: Bot REACTIVADO en este chat. Seguiré atendiendo a este cliente.");
+                return;
+            }
+            if (text.trim() === "/reset") {
+                await memoryDb.clearMemory(remoteJid);
+                delete pausedUsers[remoteJid];
+                await sendText(remoteJid, "🤖 Cynthia dice: Memoria borrada y bot reactivado para este chat.");
+                return;
+            }
+
+            // Si es un mensaje normal de Joseph hacia un cliente, pausamos al bot
+            if (!text.startsWith("/")) {
+                console.log(`[WhatsApp] 🛑 Humano intervino con ${cleanNumber}. Pausando bot para este chat.`);
+                pausedUsers[remoteJid] = true;
+            }
+            return;
+        }
+
+        // --- IGNORAR SI BOT ESTÁ APAGADO MAESTRO O EN EL CHAT ---
+        if (!masterSwitch.isOn || pausedUsers[remoteJid]) {
+            return; // ignoramos el mensaje del cliente
+        }
+
+        // --- ENCOLAMIENTO DE MENSAJES DEL CLIENTE ---
+        if (!messageQueues[remoteJid]) {
+            messageQueues[remoteJid] = [];
+        }
+        messageQueues[remoteJid].push(text);
+
+        if (messageTimeouts[remoteJid]) {
+            clearTimeout(messageTimeouts[remoteJid]);
+        }
+
+        // Simulamos que el bot está leyendo y va a escribir
+        sendPresence(remoteJid, "composing").catch(() => {});
+
+        messageTimeouts[remoteJid] = setTimeout(async () => {
+            const combinedText = messageQueues[remoteJid].join(" ");
+            
+            delete messageQueues[remoteJid];
+            delete messageTimeouts[remoteJid];
+
+            console.log(`[Bot] 🤖 Procesando bloque consolidado de ${cleanNumber}: ${combinedText}`);
+
+            try {
+                // Le pasamos todo bloqueado a agent loop (usa JID como chat ID)
+                await runAgentLoop(remoteJid, combinedText);
+            } catch (error) {
+                console.error("[Bot] Error en runAgentLoop:", error);
+            }
+        }, 7000); // Espera silenciosa de 7s
+    });
+
+    const PORT = config.PORT;
+    app.listen(PORT, () => {
+        console.log(`[App] 🚀 Servidor Webhook Express escuchando en el puerto ${PORT}...`);
+    });
+}
+
+main().catch(console.error);
