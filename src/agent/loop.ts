@@ -157,7 +157,7 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
 
             // Si el cliente pregunta por la ubicación
             if (extractedData.intencion_principal === 'ubicacion') {
-                datosInyectadosAlSistema += " AVISO: El cliente pregunta por la ubicación. Dile nuestra dirección y que le envías el pin de ubicación ahora mismo. ";
+                datosInyectadosAlSistema += " AVISO: El cliente pregunta por la ubicación. Dile nuestra dirección y que le envías la ubicación ahora mismo. ";
             }
 
             // --- REGLA FASE 4: RECONOCIMIENTO DE MEDIA ---
