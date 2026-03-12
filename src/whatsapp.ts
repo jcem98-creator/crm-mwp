@@ -52,6 +52,8 @@ export async function sendMedia(remoteJid: string, mediaUrl: string, mediaType: 
 
     console.log(`[WhatsApp] Enviando ${mediaType} a: ${number}. URL: ${mediaUrl}`);
 
+    const mimeType = mediaType === "image" ? "image/jpeg" : "video/mp4";
+
     try {
         const res = await fetch(`${config.EVOLUTION_API_URL}/message/sendMedia/${config.EVOLUTION_INSTANCE_NAME}`, {
             method: "POST",
@@ -62,7 +64,8 @@ export async function sendMedia(remoteJid: string, mediaUrl: string, mediaType: 
             body: JSON.stringify({
                 number: number,
                 media: mediaUrl,
-                mediaType: mediaType,
+                mediatype: mediaType,
+                mimetype: mimeType,
                 caption: caption || "",
                 fileName: fileName
             })
