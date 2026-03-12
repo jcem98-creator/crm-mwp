@@ -31,10 +31,10 @@ Responde ÚNICA Y EXCLUSIVAMENTE con un JSON válido que siga esta estructura:
   "trae_licencia_propia": "Boolean: true si el cliente menciona que YA tiene su licencia de matrimonio",
   "quiere_pagar_o_agendar": "Boolean: true si usa palabras como 'pagar', 'cuanto es el deposito', 'agendar fecha', 'reservar'",
   "quiere_humano": "Boolean: true si pregunta si es un bot, o pide hablar con una persona o asesor",
-  "pide_fotos": "Boolean: true si el cliente pide ver FOTOS o imágenes de la capilla o el local",
-  "pide_videos": "Boolean: true si el cliente pide ver VIDEOS o un recorrido filmado del local",
   "cliente_nombre": "String: El nombre del cliente si lo mencionó claramente, sino 'ninguno'",
-  "fecha_boda_tentativa": "String: La fecha u ocasión aproximada (ej: '15 de Mayo', 'el próximo sábado', 'Diciembre') o 'ninguno'"
+  "fecha_boda_tentativa": "String: La fecha u ocasión aproximada (ej: '15 de Mayo', 'el próximo sábado', 'Diciembre') o 'ninguno'",
+  "pide_fotos": "Boolean: true si el cliente pide ver FOTOS o imágenes de la capilla o el local",
+  "pide_videos": "Boolean: true si el cliente pide ver VIDEOS o un recorrido filmado del local"
 }`;
 
 // -----------------------------------------
@@ -198,7 +198,6 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
                 await sendText(chatId, chunks[i]);
                 await new Promise(resolve => setTimeout(resolve, 300));
             }
-
             // --- ENVÍO DE MULTIMEDIA SELECTIVO (Fase 4) ---
             const baseUrl = "https://mwp.botlylatam.cloud/assets/media";
 
