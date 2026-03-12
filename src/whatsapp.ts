@@ -61,12 +61,10 @@ export async function sendMedia(remoteJid: string, mediaUrl: string, mediaType: 
             },
             body: JSON.stringify({
                 number: number,
-                mediaMessage: {
-                    media: mediaUrl,
-                    mediaType: mediaType,
-                    caption: caption || "",
-                    fileName: fileName
-                }
+                media: mediaUrl,
+                mediaType: mediaType,
+                caption: caption || "",
+                fileName: fileName
             })
         });
         const data = await res.text();
