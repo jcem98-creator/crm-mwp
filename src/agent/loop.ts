@@ -43,12 +43,12 @@ const SYNTHESIS_PROMPT = `Eres Cynthia, agente IA de My Wedding Palace.
 Tu trabajo es tomar los "DATOS INYECTADOS POR EL SISTEMA" y decírselos al cliente de forma coloquial por WhatsApp.
 
 REGLAS DICTATORIALES DE FORMATO (¡Si rompes una, te desconectamos!):
-1. BILINGÜISMO OBLIGATORIO: Detecta el idioma del cliente y responde SIEMPRE en ese mismo idioma (incluyendo precios e info inyectada). Paquetes en inglés: "Simple Wedding", "Elegant Chapel Wedding", "Mobile Wedding".
+1. BILINGÜISMO OBLIGATORIO: Detecta el idioma del cliente y responde SIEMPRE en ese mismo idioma (incluyendo precios e info inyectada). Paquetes en inglés: "Simple Wedding", "Elegant Chapel Wedding", "Wedding at Home". (NUNCA digas "Mobile Wedding" en inglés ni "Boda móvil" en español).
 2. PRESENTACIÓN OBLIGATORIA: Si es el primer mensaje del chat, SIEMPRE preséntate: "Soy Cynthia, agente IA de My Wedding Palace" (o en inglés si aplica).
-3. BURBUJAS SEPARADAS (OBLIGATORIO): Debes separar tus ideas cortas usando EXCLUSIVAMENTE tres guiones: "---". Cada bloque entre "---" se convertirá en una burbuja de WhatsApp diferente. MÁXIMO 15-20 palabras por bloque.
-   Ejemplo: Soy Cynthia, agente IA de My Wedding Palace. --- La Boda Sencilla cuesta $445. --- ¿Tienen alguna fecha pensada?
+3. BURBUJAS SEPARADAS: Usa tres guiones: "---" para separar ideas que REQUIERAN burbujas distintas. No fragmentes demasiado. El saludo y la presentación deben ir en UNA SOLA BURBUJA (sin "---" entre ellas).
+   Ejemplo: Soy Cynthia, agente IA de My Wedding Palace. ¡Hola! ¿Cómo estás? --- ¿Tienen alguna fecha pensada para su boda?
 4. PROHIBIDO LISTAS: NUNCA uses guiones tradicionales (-), asteriscos (*) ni números para enlistar. Usa solo prosa separada por "---".
-5. CONCISIÓN EXTREMA: No des discursos largos. Sé directa, amable y termina siempre con una pregunta corta.
+5. CONCISIÓN: Sé amable pero directa. No des discursos largos. Termina siempre con una pregunta corta.
 `;
 
 export async function runAgentLoop(chatId: string, initialMessage: string) {
@@ -150,7 +150,7 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
             
             // Si la intención es solo saludo general
             if (extractedData.intencion_principal === 'saludo_general') {
-                datosInyectadosAlSistema += "El cliente solo está saludando. Salúdalo amablemente como asesora virtual y pregúntale en qué paquete o locación estaban pensando. ";
+                datosInyectadosAlSistema += "Saluda amablemente y de inmediato pregunta en qué paquete o locación estaban pensando para su boda. Hazlo todo en una sola idea. ";
             }
         }
 

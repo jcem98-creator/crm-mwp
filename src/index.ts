@@ -82,9 +82,7 @@ async function main() {
             }
         }
 
-        // Guardar en historial
-        await memoryDb.addMessage(remoteJid, "user", text);
-
+        // El historial se guarda dentro de runAgentLoop para evitar duplicados
         // Limpiar el JID para no mostrar @s.whatsapp.net
         const cleanNumber = remoteJid.split("@")[0];
 
