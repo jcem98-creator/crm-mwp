@@ -48,12 +48,10 @@ REGLAS DICTATORIALES DE FORMATO (¡Si rompes una, te desconectamos!):
 1. BILINGÜISMO: Detecta el idioma del cliente y responde SIEMPRE en ese mismo idioma. Paquetes en español: "Boda Sencilla o Simple", "Boda en Capilla Elegante", "Boda a Domicilio". En inglés: "Simple Wedding", "Elegant Chapel Wedding", "Wedding at Home". (NUNCA digas "Mobile Wedding" ni "Boda Móvil").
 2. SALUDO Y PRESENTACIÓN SIEMPRE JUNTOS: Si es el primer mensaje, comienza SIEMPRE con un saludo y luego preséntate. Ejemplo: "¡Hola! Soy Cynthia, agente IA de My Wedding Palace." (O en inglés). Esto DEBE ir en la misma burbuja.
 3. BURBUJAS: Usa "---" para separar ideas. Máximo 2-3 burbujas por respuesta. La primera burbuja debe ser el saludo/presentación y la segunda la información o pregunta.
-   Ejemplo: ¡Hola! Soy Cynthia, agente IA de My Wedding Palace. --- ¿Qué tipo de ceremonia le interesa? Boda Sencilla, Boda en capilla Elegante o Boda a Domicilio?
+   Ejemplo: ¡Hola! Soy Cynthia, agente IA de My Wedding Palace. --- ¿En qué paquete o locación estaban pensando para su boda?
 4. PROHIBIDO LISTAS: No uses guiones (-), asteriscos (*) ni números. Solo texto fluido separado por "---".
 5. CONCISIÓN: No des discursos. Termina siempre con una pregunta corta. No menciones depósitos.
-6. TERMINOLOGÍA: Usa SIEMPRE la palabra "ministro" para referirte a quien realiza la ceremonia. NUNCA uses "oficiante" ni otros sinónimos.
 `;
-
 
 export async function runAgentLoop(chatId: string, initialMessage: string) {
     // Guardar mensaje
@@ -72,7 +70,7 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
         ];
         
         const extractedData = await generateJSON(extMessages);
-        console.log("[Capa 1] Datos extraídos:", JSON.stringify(extractedData, null, 2));
+        console.log("[Capa 1] Datos extraídos:", extractedData);
 
         // Actualizar datos del lead en el CRM
         await memoryDb.updateLeadStatus(chatId, {
@@ -148,13 +146,13 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
                       if (extractedData.trae_licencia_propia) precioCap = extractedData.dia_mencionado === 'domingo' ? "$350" : "$250";
                       datosInyectadosAlSistema += `Boda en Capilla Elegante (Fin de semana): El costo es ${precioCap} (ya incluye descuento si traen licencia). Incluye TODO lo de la sencilla PLUS Música y Fotografía de regalo. `;
                  } else {
-                      datosInyectadosAlSistema += "Regla: No enlistes todos los paquetes de golpe. Pregúntale exactamente esto: ¿Qué tipo de ceremonia le interesa? Boda Sencilla, Boda en capilla Elegante o Boda a Domicilio? ";
+                      datosInyectadosAlSistema += "Regla: No enlistes todos los paquetes de golpe. Dile que la Boda Sencilla (L-J) cuesta $445 y la Capilla Elegante (Fin de semana) inicia en $495. A Domicilio desde $545. Pregúntale qué día tenían pensado casarse. ";
                  }
             }
             
             // Si la intención es solo saludo general
             if (extractedData.intencion_principal === 'saludo_general') {
-                datosInyectadosAlSistema += "Saluda amablemente y pregunta de inmediato: ¿Qué tipo de ceremonia le interesa? Boda Sencilla, Boda en capilla Elegante o Boda a Domicilio? ";
+                datosInyectadosAlSistema += "Saluda amablemente y de inmediato pregunta en qué paquete o locación estaban pensando para su boda. Hazlo todo en una sola idea. ";
             }
 
             // --- REGLA FASE 4: RECONOCIMIENTO DE MEDIA ---
@@ -203,23 +201,14 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
 
             // --- ENVÍO DE MULTIMEDIA SELECTIVO (Fase 4) ---
             const baseUrl = "https://mwp.botlylatam.cloud/assets/media";
-            console.log(`[Bot] Verificando multimedia: pide_fotos=${extractedData.pide_fotos}, pide_videos=${extractedData.pide_videos}`);
 
             if (extractedData.pide_fotos) {
                 await sendPresence(chatId, "composing");
                 await new Promise(r => setTimeout(r, 1000));
-
-                if (extractedData.tipo_servicio_mencionado === 'domicilio') {
-                    console.log("[Bot] Enviando fotos de domicilio...");
-                    await sendMedia(chatId, `${baseUrl}/domicilio1.jpg`, "image", "🏡 Una hermosa boda a domicilio");
-                } else {
-                    console.log("[Bot] Enviando fotos de capilla...");
-                    await sendMedia(chatId, `${baseUrl}/capilla1.jpg`, "image", "📸 Nuestra Capilla Elegante");
-                    await new Promise(r => setTimeout(r, 800));
-                    await sendMedia(chatId, `${baseUrl}/capilla2.jpg`, "image", "✨ Otro ángulo de nuestra capilla");
-                }
+                await sendMedia(chatId, `${baseUrl}/capilla1.jpg`, "image", "📸 Nuestra Capilla Elegante");
+                await new Promise(r => setTimeout(r, 800));
+                await sendMedia(chatId, `${baseUrl}/capilla2.jpg`, "image", "✨ Otro ángulo de nuestra capilla");
             }
-
 
             if (extractedData.pide_videos) {
                 await sendPresence(chatId, "composing");
