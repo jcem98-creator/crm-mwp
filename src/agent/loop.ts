@@ -1,6 +1,6 @@
 import { LLMMessage, generateResponse, generateJSON } from "../llm/index.js";
 import { memoryDb } from "../db/index.js";
-import { sendText, sendPresence } from "../whatsapp.js";
+import { sendText, sendPresence, sendMedia } from "../whatsapp.js";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -31,6 +31,7 @@ Responde ÚNICA Y EXCLUSIVAMENTE con un JSON válido que siga esta estructura:
   "trae_licencia_propia": "Boolean: true si el cliente menciona que YA tiene su licencia de matrimonio",
   "quiere_pagar_o_agendar": "Boolean: true si usa palabras como 'pagar', 'cuanto es el deposito', 'agendar fecha', 'reservar'",
   "quiere_humano": "Boolean: true si pregunta si es un bot, o pide hablar con una persona o asesor",
+  "pide_fotos_o_videos": "Boolean: true si el cliente pide ver fotos, videos, la capilla o imágenes del lugar",
   "cliente_nombre": "String: El nombre del cliente si lo mencionó claramente, sino 'ninguno'",
   "fecha_boda_tentativa": "String: La fecha u ocasión aproximada (ej: '15 de Mayo', 'el próximo sábado', 'Diciembre') o 'ninguno'"
 }`;
@@ -183,6 +184,24 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
                 await sendText(chatId, chunks[i]);
                 await new Promise(resolve => setTimeout(resolve, 300));
             }
+
+            // --- ENVÍO DE MULTIMEDIA (Fase 4) ---
+            if (extractedData.pide_fotos_o_videos) {
+                const baseUrl = "https://mwp.botlylatam.cloud/assets/media";
+                
+                // Enviar Fotos de la Capilla
+                await sendPresence(chatId, "composing");
+                await new Promise(r => setTimeout(r, 1500));
+                await sendMedia(chatId, `${baseUrl}/capilla1.jpg`, "image", "📸 Nuestra Capilla Elegante");
+                
+                await new Promise(r => setTimeout(r, 1000));
+                await sendMedia(chatId, `${baseUrl}/capilla2.jpg`, "image", "✨ Otro ángulo de nuestra capilla");
+
+                // Enviar Video
+                await new Promise(r => setTimeout(r, 1500));
+                await sendMedia(chatId, `${baseUrl}/video_capilla.mp4`, "video", "🎥 Mira un pequeño recorrido de nuestras instalaciones");
+            }
+
             return;
         }
 

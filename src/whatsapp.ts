@@ -26,7 +26,6 @@ export async function sendText(remoteJid: string, text: string) {
     const number = remoteJid.includes("@") ? remoteJid.split("@")[0] : remoteJid;
     
     console.log(`[WhatsApp] Enviando texto a: ${number} (original: ${remoteJid})`);
-    console.log(`[WhatsApp] URL: ${config.EVOLUTION_API_URL}/message/sendText/${config.EVOLUTION_INSTANCE_NAME}`);
     
     try {
         const res = await fetch(`${config.EVOLUTION_API_URL}/message/sendText/${config.EVOLUTION_INSTANCE_NAME}`, {
@@ -44,5 +43,35 @@ export async function sendText(remoteJid: string, text: string) {
         console.log(`[WhatsApp] sendText response (${res.status}):`, data.substring(0, 300));
     } catch (e) {
         console.error("[WhatsApp] Error sending text:", e);
+    }
+}
+
+export async function sendMedia(remoteJid: string, mediaUrl: string, mediaType: "image" | "video", caption?: string) {
+    const number = remoteJid.includes("@") ? remoteJid.split("@")[0] : remoteJid;
+    const fileName = mediaUrl.split("/").pop() || "archivo";
+
+    console.log(`[WhatsApp] Enviando ${mediaType} a: ${number}. URL: ${mediaUrl}`);
+
+    try {
+        const res = await fetch(`${config.EVOLUTION_API_URL}/message/sendMedia/${config.EVOLUTION_INSTANCE_NAME}`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "apikey": config.EVOLUTION_API_KEY as string
+            },
+            body: JSON.stringify({
+                number: number,
+                mediaMessage: {
+                    media: mediaUrl,
+                    mediaType: mediaType,
+                    caption: caption || "",
+                    fileName: fileName
+                }
+            })
+        });
+        const data = await res.text();
+        console.log(`[WhatsApp] sendMedia response (${res.status}):`, data.substring(0, 300));
+    } catch (e) {
+        console.error("[WhatsApp] Error sending media:", e);
     }
 }

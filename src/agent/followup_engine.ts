@@ -1,5 +1,5 @@
 import { memoryDb } from "../db/index.js";
-import { sendText, sendPresence } from "../whatsapp.js";
+import { sendText, sendPresence, sendMedia } from "../whatsapp.js";
 import { LLMMessage, generateResponse } from "../llm/index.js";
 
 /**
@@ -84,6 +84,13 @@ export async function processFollowups() {
                     await new Promise(r => setTimeout(r, 2000));
                     await sendText(lead.chat_id, response.content);
                     
+                    // Si es Etapa 2 (24h), enviamos la foto de una pareja feliz para re-enganchar
+                    if (targetCount === 2) {
+                        await new Promise(r => setTimeout(r, 2000));
+                        const baseUrl = "https://mwp.botlylatam.cloud/assets/media";
+                        await sendMedia(lead.chat_id, `${baseUrl}/pareja.jpg`, "image", "¡Esperamos verte pronto por aquí! 💍✨");
+                    }
+
                     // Guardar en memoria y actualizar marca de tiempo
                     await memoryDb.addMessage(lead.chat_id, "assistant", `(SEGUIMIENTO AUTO) ${response.content}`);
                     await memoryDb.updateLeadStatus(lead.chat_id, { 
