@@ -33,8 +33,8 @@ Responde ÚNICA Y EXCLUSIVAMENTE con un JSON válido que siga esta estructura:
   "quiere_humano": "Boolean: true si pregunta si es un bot, o pide hablar con una persona o asesor",
   "cliente_nombre": "String: El nombre del cliente si lo mencionó claramente, sino 'ninguno'",
   "fecha_boda_tentativa": "String: La fecha u ocasión aproximada (ej: '15 de Mayo', 'el próximo sábado', 'Diciembre') o 'ninguno'",
-  "pide_fotos": "Boolean: true si el cliente pide ver FOTOS o imágenes de la capilla o el local",
-  "pide_videos": "Boolean: true si el cliente pide ver VIDEOS o un recorrido filmado del local"
+  "pide_fotos": "Boolean: true SOLO si en el ÚLTIMO mensaje (no en mensajes anteriores) el cliente pide ver FOTOS o imágenes. Si el último mensaje habla de otra cosa, debe ser false.",
+  "pide_videos": "Boolean: true SOLO si en el ÚLTIMO mensaje (no en mensajes anteriores) el cliente pide ver VIDEOS o un recorrido. Si el último mensaje habla de otra cosa, debe ser false."
 }`;
 
 // -----------------------------------------
@@ -149,6 +149,8 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
                  } else {
                       datosInyectadosAlSistema += "Regla: No enlistes todos los paquetes de golpe. Dile que la Boda Sencilla (L-J) cuesta $445 y la Capilla Elegante (Fin de semana) inicia en $495. A Domicilio desde $545. Pregúntale qué día tenían pensado casarse. ";
                  }
+                 // Ofrecer fotos/video proactivamente después de dar precios
+                 datosInyectadosAlSistema += "ADEMÁS, al final de tu respuesta de precios, ofrécele amablemente si desea ver fotos o un video de las instalaciones. ";
             }
             
             // Si la intención es solo saludo general
