@@ -51,7 +51,9 @@ REGLAS DICTATORIALES DE FORMATO (¡Si rompes una, te desconectamos!):
    Ejemplo: ¡Hola! Soy Cynthia, agente IA de My Wedding Palace. --- ¿Qué tipo de ceremonia le interesa? Boda Sencilla, Boda en capilla Elegante o Boda a Domicilio?
 4. PROHIBIDO LISTAS: No uses guiones (-), asteriscos (*) ni números. Solo texto fluido separado por "---".
 5. CONCISIÓN: No des discursos. Termina siempre con una pregunta corta. No menciones depósitos.
+6. TERMINOLOGÍA: Usa SIEMPRE la palabra "ministro" para referirte a quien realiza la ceremonia. NUNCA uses "oficiante" ni otros sinónimos.
 `;
+
 
 export async function runAgentLoop(chatId: string, initialMessage: string) {
     // Guardar mensaje
