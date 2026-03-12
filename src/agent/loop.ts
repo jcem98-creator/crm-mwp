@@ -204,13 +204,20 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
             console.log(`[Bot] Verificando multimedia: pide_fotos=${extractedData.pide_fotos}, pide_videos=${extractedData.pide_videos}`);
 
             if (extractedData.pide_fotos) {
-                console.log("[Bot] Enviando fotos...");
                 await sendPresence(chatId, "composing");
                 await new Promise(r => setTimeout(r, 1000));
-                await sendMedia(chatId, `${baseUrl}/capilla1.jpg`, "image", "📸 Nuestra Capilla Elegante");
-                await new Promise(r => setTimeout(r, 800));
-                await sendMedia(chatId, `${baseUrl}/capilla2.jpg`, "image", "✨ Otro ángulo de nuestra capilla");
+
+                if (extractedData.tipo_servicio_mencionado === 'domicilio') {
+                    console.log("[Bot] Enviando fotos de domicilio...");
+                    await sendMedia(chatId, `${baseUrl}/domicilio1.jpg`, "image", "🏡 Una hermosa boda a domicilio");
+                } else {
+                    console.log("[Bot] Enviando fotos de capilla...");
+                    await sendMedia(chatId, `${baseUrl}/capilla1.jpg`, "image", "📸 Nuestra Capilla Elegante");
+                    await new Promise(r => setTimeout(r, 800));
+                    await sendMedia(chatId, `${baseUrl}/capilla2.jpg`, "image", "✨ Otro ángulo de nuestra capilla");
+                }
             }
+
 
             if (extractedData.pide_videos) {
                 await sendPresence(chatId, "composing");
