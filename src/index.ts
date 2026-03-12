@@ -61,13 +61,29 @@ async function main() {
         
         // Extract text depending on message type (conversation, extendedTextMessage, etc)
         let text = "";
+        let messageType = "";
         if (msgInfo.conversation) {
             text = msgInfo.conversation;
+            messageType = 'conversation';
         } else if (msgInfo.extendedTextMessage && msgInfo.extendedTextMessage.text) {
             text = msgInfo.extendedTextMessage.text;
+            messageType = 'extendedTextMessage';
         }
 
         if (!text) return;
+
+        const pushName = msgData.pushName; // Nombre de perfil de WhatsApp
+
+        // Actualizar nombre si no existe o es nuevo
+        if (pushName) {
+            const lead = (await memoryDb.getAllLeads()).find(l => l.chat_id === remoteJid);
+            if (!lead || !lead.name || lead.name === 'Sin Nombre') {
+                await memoryDb.updateLeadStatus(remoteJid, { name: pushName });
+            }
+        }
+
+        // Guardar en historial
+        await memoryDb.addMessage(remoteJid, "user", text);
 
         // Limpiar el JID para no mostrar @s.whatsapp.net
         const cleanNumber = remoteJid.split("@")[0];
@@ -194,15 +210,15 @@ async function main() {
     });
 
     app.post("/api/leads/update-status", async (req, res) => {
-        const { chatId, status } = req.body;
-        if (!chatId || !status) {
-            return res.status(400).json({ error: "chatId y status son requeridos" });
+        const { chatId, status, name, date, amount } = req.body;
+        if (!chatId) {
+            return res.status(400).json({ error: "chatId es requerido" });
         }
         try {
-            await memoryDb.updateLeadStatus(chatId, { status });
+            await memoryDb.updateLeadStatus(chatId, { status, name, date, amount });
             res.json({ success: true });
         } catch (error) {
-            res.status(500).json({ error: "Error al actualizar estado" });
+            res.status(500).json({ error: "Error al actualizar lead" });
         }
     });
 

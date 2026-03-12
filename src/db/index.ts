@@ -36,11 +36,13 @@ export class SQLiteMemoryDB {
             `);
 
             // Asegurar columnas para Fase 2 (CRM)
-            const columns = ["name", "package_interest", "desired_date", "status"];
+            const columns = ["name", "package_interest", "desired_date", "status", "paid_amount"];
             for (const col of columns) {
                 try {
                     if (col === "status") {
                         await this.db.exec(`ALTER TABLE leads_status ADD COLUMN status TEXT DEFAULT 'nuevo'`);
+                    } else if (col === "paid_amount") {
+                        await this.db.exec(`ALTER TABLE leads_status ADD COLUMN paid_amount REAL DEFAULT 0`);
                     } else {
                         await this.db.exec(`ALTER TABLE leads_status ADD COLUMN ${col} TEXT`);
                     }
@@ -67,10 +69,11 @@ export class SQLiteMemoryDB {
         name?: string,
         package?: string,
         date?: string,
-        status?: string
+        status?: string,
+        amount?: number
     }): Promise<void> {
         await this.initialize();
-        const { last_bot_at, needs_followup, reset_count, increment_count, name, package: pkg, date, status } = update;
+        const { last_bot_at, needs_followup, reset_count, increment_count, name, package: pkg, date, status, amount } = update;
         
         // Upsert lead status
         await this.db!.run(
@@ -90,17 +93,20 @@ export class SQLiteMemoryDB {
         if (increment_count) {
             await this.db!.run(`UPDATE leads_status SET followup_count = followup_count + 1 WHERE chat_id = ?`, [String(chatId)]);
         }
-        if (name) {
+        if (name !== undefined) {
             await this.db!.run(`UPDATE leads_status SET name = ? WHERE chat_id = ?`, [name, String(chatId)]);
         }
-        if (pkg) {
+        if (pkg !== undefined) {
             await this.db!.run(`UPDATE leads_status SET package_interest = ? WHERE chat_id = ?`, [pkg, String(chatId)]);
         }
-        if (date) {
+        if (date !== undefined) {
             await this.db!.run(`UPDATE leads_status SET desired_date = ? WHERE chat_id = ?`, [date, String(chatId)]);
         }
-        if (status) {
+        if (status !== undefined) {
             await this.db!.run(`UPDATE leads_status SET status = ? WHERE chat_id = ?`, [status, String(chatId)]);
+        }
+        if (amount !== undefined) {
+            await this.db!.run(`UPDATE leads_status SET paid_amount = ? WHERE chat_id = ?`, [amount, String(chatId)]);
         }
     }
 

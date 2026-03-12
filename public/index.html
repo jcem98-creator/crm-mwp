@@ -194,7 +194,7 @@
 
         <div class="stats-grid">
             <div class="stat-card">
-                <span>Total Leads</span>
+                <span>Leads Activos</span>
                 <strong id="stat-total">0</strong>
             </div>
             <div class="stat-card">
@@ -206,14 +206,14 @@
                 <strong id="stat-citas">0</strong>
             </div>
             <div class="stat-card" style="border-color: var(--success);">
-                <span>Total Pagado</span>
+                <span>Ventas Totales</span>
                 <strong id="stat-pagado" style="color: var(--success);">$0</strong>
             </div>
         </div>
 
         <div class="leads-card">
             <div class="table-header">
-                <h2>Todos los Leads</h2>
+                <h2>Gestión de Leads</h2>
                 <input type="text" class="search-box" placeholder="Buscar cliente..." oninput="filterTable(this.value)">
             </div>
             <table>
@@ -221,7 +221,7 @@
                     <tr>
                         <th>Cliente / Chat</th>
                         <th>Interés</th>
-                        <th>Fecha</th>
+                        <th>Fecha Boda</th>
                         <th>Estado</th>
                         <th>Acción</th>
                     </tr>
@@ -236,8 +236,10 @@
     <script>
         async function fetchLeads() {
             const res = await fetch('/api/leads');
-            const leads = await res.json();
-            renderLeads(leads);
+            let leads = await res.json();
+            // Filtrar descartados de la vista principal (opcional, pero limpio)
+            const activeLeads = leads.filter(l => l.status !== 'descartado');
+            renderLeads(activeLeads);
             updateStats(leads);
         }
 
@@ -251,20 +253,54 @@
                 
                 tr.innerHTML = `
                     <td>
-                        <div style="font-weight: 600;">${lead.name || 'Sin Nombre'}</div>
+                        <div style="font-weight: 600; cursor: pointer; text-decoration: underline dotted;" onclick="editField('${lead.chat_id}', 'name', '${lead.name || ''}')">
+                            ${lead.name || 'Sin Nombre'} ✏️
+                        </div>
                         <div style="color: grey; font-size: 0.8rem;">${cleanPhone}</div>
                     </td>
                     <td>${lead.package_interest || '-'}</td>
-                    <td>${lead.desired_date || '-'}</td>
-                    <td><span class="badge badge-${lead.status.toLowerCase()}">${lead.status.toUpperCase()}</span></td>
+                    <td>
+                        <div style="cursor: pointer;" onclick="editField('${lead.chat_id}', 'date', '${lead.desired_date || ''}')">
+                            ${lead.desired_date || '-'} ✏️
+                        </div>
+                    </td>
+                    <td><span class="badge badge-${lead.status.toLowerCase()}">${lead.status.toUpperCase()} ${lead.paid_amount > 0 ? '($'+lead.paid_amount+')' : ''}</span></td>
                     <td class="actions">
                         <button onclick="updateStatus('${lead.chat_id}', 'interesado')">Interés</button>
                         <button onclick="updateStatus('${lead.chat_id}', 'cita')">Cita</button>
-                        <button onclick="updateStatus('${lead.chat_id}', 'pago')">Vendido</button>
+                        <button onclick="markAsPaid('${lead.chat_id}')" style="border-color: var(--success); color: var(--success);">Vendido</button>
+                        <button onclick="updateStatus('${lead.chat_id}', 'descartado')" style="border-color: var(--danger); color: var(--danger);">Descartar</button>
                     </td>
                 `;
                 body.appendChild(tr);
             });
+        }
+
+        async function editField(chatId, field, currentVal) {
+            const label = field === 'name' ? 'Nombre del Cliente' : 'Fecha Deseada';
+            const newVal = prompt(`Editar ${label}:`, currentVal);
+            if (newVal !== null) {
+                const body = { chatId };
+                body[field] = newVal;
+                await fetch('/api/leads/update-status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                fetchLeads();
+            }
+        }
+
+        async function markAsPaid(chatId) {
+            const amount = prompt("¿Cuál fue el monto de la venta?", "500");
+            if (amount !== null) {
+                await fetch('/api/leads/update-status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ chatId, status: 'pago', amount: parseFloat(amount) })
+                });
+                fetchLeads();
+            }
         }
 
         async function updateStatus(chatId, status) {
@@ -277,12 +313,13 @@
         }
 
         function updateStats(leads) {
-            document.getElementById('stat-total').innerText = leads.length;
+            const active = leads.filter(l => l.status !== 'descartado');
+            document.getElementById('stat-total').innerText = active.length;
             document.getElementById('stat-interesados').innerText = leads.filter(l => l.status === 'interesado').length;
             document.getElementById('stat-citas').innerText = leads.filter(l => l.status === 'cita').length;
             
-            const pagados = leads.filter(l => l.status === 'pago').length;
-            document.getElementById('stat-pagado').innerText = pagados;
+            const totalMoney = leads.reduce((sum, l) => sum + (l.paid_amount || 0), 0);
+            document.getElementById('stat-pagado').innerText = '$' + totalMoney.toLocaleString();
         }
 
         function filterTable(query) {
