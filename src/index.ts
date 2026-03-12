@@ -30,6 +30,7 @@ async function main() {
     const app = express();
     app.use(cors());
     app.use(express.json());
+    app.use(express.static("public"));
 
     app.post("/webhook", async (req, res) => {
         // Validar token secreto del webhook
@@ -181,6 +182,30 @@ async function main() {
     });
 
     const PORT = config.PORT;
+
+    // --- API PARA DASHboard CRM ---
+    app.get("/api/leads", async (req, res) => {
+        try {
+            const leads = await memoryDb.getAllLeads();
+            res.json(leads);
+        } catch (error) {
+            res.status(500).json({ error: "Error al obtener leads" });
+        }
+    });
+
+    app.post("/api/leads/update-status", async (req, res) => {
+        const { chatId, status } = req.body;
+        if (!chatId || !status) {
+            return res.status(400).json({ error: "chatId y status son requeridos" });
+        }
+        try {
+            await memoryDb.updateLeadStatus(chatId, { status });
+            res.json({ success: true });
+        } catch (error) {
+            res.status(500).json({ error: "Error al actualizar estado" });
+        }
+    });
+
     app.listen(PORT, () => {
         console.log(`[App] 🚀 Servidor Webhook Express escuchando en el puerto ${PORT}...`);
         

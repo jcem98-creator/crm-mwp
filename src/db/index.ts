@@ -34,6 +34,20 @@ export class SQLiteMemoryDB {
                     needs_followup BOOLEAN DEFAULT 0
                 );
             `);
+
+            // Asegurar columnas para Fase 2 (CRM)
+            const columns = ["name", "package_interest", "desired_date", "status"];
+            for (const col of columns) {
+                try {
+                    if (col === "status") {
+                        await this.db.exec(`ALTER TABLE leads_status ADD COLUMN status TEXT DEFAULT 'nuevo'`);
+                    } else {
+                        await this.db.exec(`ALTER TABLE leads_status ADD COLUMN ${col} TEXT`);
+                    }
+                } catch (e) {
+                    // Columna ya existe, ignorar
+                }
+            }
         }
     }
 
@@ -45,9 +59,18 @@ export class SQLiteMemoryDB {
         );
     }
 
-    public async updateLeadStatus(chatId: string | number, update: { last_bot_at?: boolean, needs_followup?: boolean, reset_count?: boolean, increment_count?: boolean }): Promise<void> {
+    public async updateLeadStatus(chatId: string | number, update: { 
+        last_bot_at?: boolean, 
+        needs_followup?: boolean, 
+        reset_count?: boolean, 
+        increment_count?: boolean,
+        name?: string,
+        package?: string,
+        date?: string,
+        status?: string
+    }): Promise<void> {
         await this.initialize();
-        const { last_bot_at, needs_followup, reset_count, increment_count } = update;
+        const { last_bot_at, needs_followup, reset_count, increment_count, name, package: pkg, date, status } = update;
         
         // Upsert lead status
         await this.db!.run(
@@ -67,6 +90,23 @@ export class SQLiteMemoryDB {
         if (increment_count) {
             await this.db!.run(`UPDATE leads_status SET followup_count = followup_count + 1 WHERE chat_id = ?`, [String(chatId)]);
         }
+        if (name) {
+            await this.db!.run(`UPDATE leads_status SET name = ? WHERE chat_id = ?`, [name, String(chatId)]);
+        }
+        if (pkg) {
+            await this.db!.run(`UPDATE leads_status SET package_interest = ? WHERE chat_id = ?`, [pkg, String(chatId)]);
+        }
+        if (date) {
+            await this.db!.run(`UPDATE leads_status SET desired_date = ? WHERE chat_id = ?`, [date, String(chatId)]);
+        }
+        if (status) {
+            await this.db!.run(`UPDATE leads_status SET status = ? WHERE chat_id = ?`, [status, String(chatId)]);
+        }
+    }
+
+    public async getAllLeads(): Promise<any[]> {
+        await this.initialize();
+        return await this.db!.all(`SELECT * FROM leads_status ORDER BY last_bot_message_at DESC`);
     }
 
     public async getLeadsForFollowup(): Promise<any[]> {

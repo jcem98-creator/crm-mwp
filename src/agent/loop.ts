@@ -30,7 +30,9 @@ Responde ÚNICA Y EXCLUSIVAMENTE con un JSON válido que siga esta estructura:
   "dia_mencionado": "String: día de la semana si lo mencionó ('lunes', 'sabado', etc.) o 'ninguno'",
   "trae_licencia_propia": "Boolean: true si el cliente menciona que YA tiene su licencia de matrimonio",
   "quiere_pagar_o_agendar": "Boolean: true si usa palabras como 'pagar', 'cuanto es el deposito', 'agendar fecha', 'reservar'",
-  "quiere_humano": "Boolean: true si pregunta si es un bot, o pide hablar con una persona o asesor"
+  "quiere_humano": "Boolean: true si pregunta si es un bot, o pide hablar con una persona o asesor",
+  "cliente_nombre": "String: El nombre del cliente si lo mencionó claramente, sino 'ninguno'",
+  "fecha_boda_tentativa": "String: La fecha u ocasión aproximada (ej: '15 de Mayo', 'el próximo sábado', 'Diciembre') o 'ninguno'"
 }`;
 
 // -----------------------------------------
@@ -67,6 +69,13 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
         
         const extractedData = await generateJSON(extMessages);
         console.log("[Capa 1] Datos extraídos:", extractedData);
+
+        // Actualizar datos del lead en el CRM
+        await memoryDb.updateLeadStatus(chatId, {
+            name: extractedData.cliente_nombre !== "ninguno" ? extractedData.cliente_nombre : undefined,
+            package: extractedData.tipo_servicio_mencionado !== "ninguno" ? extractedData.tipo_servicio_mencionado : undefined,
+            date: extractedData.fecha_boda_tentativa !== "ninguno" ? extractedData.fecha_boda_tentativa : undefined
+        });
 
         // ==========================================
         // CAPA 2: MOTOR DE REGLAS DURO (CÓDIGO PURO)

@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard CRM | My Wedding Palace</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0c;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --accent: #d4af37; /* Gold */
+            --text: #ffffff;
+            --text-dim: #a0a0a0;
+            --success: #2ecc71;
+            --danger: #e74c3c;
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 2rem;
+            background-image: radial-gradient(circle at top right, rgba(212, 175, 55, 0.05), transparent),
+                              radial-gradient(circle at bottom left, rgba(212, 175, 55, 0.03), transparent);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 3rem;
+        }
+
+        .logo-area h1 {
+            font-size: 2rem;
+            letter-spacing: -1px;
+            background: linear-gradient(to right, #fff, var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo-area p {
+            color: var(--text-dim);
+            font-weight: 300;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .stat-card span {
+            display: block;
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-card strong {
+            font-size: 1.8rem;
+            color: var(--accent);
+        }
+
+        .leads-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .table-header {
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .search-box {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            padding: 0.6rem 1rem;
+            border-radius: 12px;
+            color: white;
+            outline: none;
+            width: 300px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            padding: 1.2rem 2rem;
+            color: var(--text-dim);
+            font-weight: 400;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        td {
+            padding: 1.2rem 2rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.95rem;
+        }
+
+        tr:last-child td {
+            border: none;
+        }
+
+        .badge {
+            padding: 0.3rem 0.8rem;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .badge-nuevo { background: rgba(255, 255, 255, 0.1); color: #fff; }
+        .badge-interesado { background: rgba(52, 152, 219, 0.2); color: #3498db; }
+        .badge-cita { background: rgba(241, 196, 15, 0.2); color: #f1c40f; }
+        .badge-pago { background: rgba(46, 204, 113, 0.2); color: #2ecc71; }
+
+        .actions button {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            padding: 0.4rem 0.7rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-right: 0.3rem;
+            font-size: 0.8rem;
+        }
+
+        .actions button:hover {
+            border-color: var(--accent);
+            color: white;
+        }
+
+        .refresh-btn {
+            background: var(--accent) !important;
+            color: black !important;
+            font-weight: 600;
+            padding: 0.6rem 1.2rem !important;
+        }
+
+        @media (max-width: 768px) {
+            header, .table-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
+            .search-box { width: 100%; }
+            table { display: block; overflow-x: auto; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <div class="logo-area">
+                <h1>Cynthia CRM</h1>
+                <p>My Wedding Palace Admin Panel</p>
+            </div>
+            <button class="refresh-btn actions" onclick="fetchLeads()">Actualizar Lista</button>
+        </header>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span>Total Leads</span>
+                <strong id="stat-total">0</strong>
+            </div>
+            <div class="stat-card">
+                <span>Interesados</span>
+                <strong id="stat-interesados">0</strong>
+            </div>
+            <div class="stat-card">
+                <span>Citas Agendadas</span>
+                <strong id="stat-citas">0</strong>
+            </div>
+            <div class="stat-card" style="border-color: var(--success);">
+                <span>Total Pagado</span>
+                <strong id="stat-pagado" style="color: var(--success);">$0</strong>
+            </div>
+        </div>
+
+        <div class="leads-card">
+            <div class="table-header">
+                <h2>Todos los Leads</h2>
+                <input type="text" class="search-box" placeholder="Buscar cliente..." oninput="filterTable(this.value)">
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Cliente / Chat</th>
+                        <th>Interés</th>
+                        <th>Fecha</th>
+                        <th>Estado</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody id="leads-body">
+                    <!-- Data here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        async function fetchLeads() {
+            const res = await fetch('/api/leads');
+            const leads = await res.json();
+            renderLeads(leads);
+            updateStats(leads);
+        }
+
+        function renderLeads(leads) {
+            const body = document.getElementById('leads-body');
+            body.innerHTML = '';
+            
+            leads.forEach(lead => {
+                const tr = document.createElement('tr');
+                const cleanPhone = lead.chat_id.split('@')[0];
+                
+                tr.innerHTML = `
+                    <td>
+                        <div style="font-weight: 600;">${lead.name || 'Sin Nombre'}</div>
+                        <div style="color: grey; font-size: 0.8rem;">${cleanPhone}</div>
+                    </td>
+                    <td>${lead.package_interest || '-'}</td>
+                    <td>${lead.desired_date || '-'}</td>
+                    <td><span class="badge badge-${lead.status.toLowerCase()}">${lead.status.toUpperCase()}</span></td>
+                    <td class="actions">
+                        <button onclick="updateStatus('${lead.chat_id}', 'interesado')">Interés</button>
+                        <button onclick="updateStatus('${lead.chat_id}', 'cita')">Cita</button>
+                        <button onclick="updateStatus('${lead.chat_id}', 'pago')">Vendido</button>
+                    </td>
+                `;
+                body.appendChild(tr);
+            });
+        }
+
+        async function updateStatus(chatId, status) {
+            await fetch('/api/leads/update-status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chatId, status })
+            });
+            fetchLeads();
+        }
+
+        function updateStats(leads) {
+            document.getElementById('stat-total').innerText = leads.length;
+            document.getElementById('stat-interesados').innerText = leads.filter(l => l.status === 'interesado').length;
+            document.getElementById('stat-citas').innerText = leads.filter(l => l.status === 'cita').length;
+            
+            const pagados = leads.filter(l => l.status === 'pago').length;
+            document.getElementById('stat-pagado').innerText = pagados;
+        }
+
+        function filterTable(query) {
+            const rows = document.querySelectorAll('#leads-body tr');
+            rows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                row.style.display = text.includes(query.toLowerCase()) ? '' : 'none';
+            });
+        }
+
+        // Initial fetch
+        fetchLeads();
+        // Auto refresh every 30s
+        setInterval(fetchLeads, 30000);
+    </script>
+</body>
+</html>

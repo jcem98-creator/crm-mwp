@@ -63,6 +63,11 @@ export async function processFollowups() {
             if (shouldSend) {
                 console.log(`[Followup] Enviando etapa ${targetCount} a ${lead.chat_id}...`);
                 
+                // Bloqueo inmediato: incrementamos el contador para que ningún otro proceso lo tome
+                await memoryDb.updateLeadStatus(lead.chat_id, { 
+                    increment_count: true 
+                });
+
                 // Obtener contexto breve
                 const history = await memoryDb.getMessages(lead.chat_id, 5);
                 
@@ -79,12 +84,14 @@ export async function processFollowups() {
                     await new Promise(r => setTimeout(r, 2000));
                     await sendText(lead.chat_id, response.content);
                     
-                    // Guardar en memoria y actualizar estado
+                    // Guardar en memoria y actualizar marca de tiempo
                     await memoryDb.addMessage(lead.chat_id, "assistant", `(SEGUIMIENTO AUTO) ${response.content}`);
                     await memoryDb.updateLeadStatus(lead.chat_id, { 
-                        last_bot_at: true, 
-                        increment_count: true 
+                        last_bot_at: true 
                     });
+                } else {
+                    // Si falló el LLM, revertimos el conteo (opcional, pero mejor dejarlo así)
+                    console.error(`[Followup] Error: No se generó contenido para ${lead.chat_id}`);
                 }
             }
         } catch (error) {
