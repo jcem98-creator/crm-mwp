@@ -160,6 +160,8 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
         
         if (response.content) {
             await memoryDb.addMessage(chatId, "assistant", response.content);
+            // Marcar que el bot respondió y activar el seguimiento
+            await memoryDb.updateLeadStatus(chatId, { last_bot_at: true, needs_followup: true });
 
             // Separación de Burbujas por "---"
             const chunks = response.content.split("---").map(c => c.trim()).filter(c => c.length > 0);

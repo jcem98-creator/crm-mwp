@@ -4,6 +4,7 @@ import { config, validateConfig } from "./config.js";
 import { runAgentLoop } from "./agent/loop.js";
 import { memoryDb } from "./db/index.js";
 import { sendText, sendPresence } from "./whatsapp.js";
+import { processFollowups } from "./agent/followup_engine.js";
 
 // Estructuras de datos para el encolamiento (Debounce)
 const messageQueues: Record<string, string[]> = {};
@@ -17,6 +18,10 @@ async function main() {
     try {
         validateConfig();
         console.log("[App] Configuración validada.");
+        
+        // Inicializar base de datos
+        await memoryDb.initialize();
+        console.log("[App] Base de datos inicializada.");
     } catch (error: any) {
         console.error("[App] Error de configuración:", error.message);
         process.exit(1);
@@ -131,6 +136,8 @@ async function main() {
             if (!text.startsWith("/")) {
                 console.log(`[WhatsApp] 🛑 Humano intervino con ${cleanNumber}. Pausando bot para este chat.`);
                 pausedUsers[remoteJid] = true;
+                // Si un humano interviene, desactivamos seguimientos automáticos
+                await memoryDb.updateLeadStatus(remoteJid, { needs_followup: false, reset_count: true });
             }
             return;
         }
@@ -145,6 +152,9 @@ async function main() {
             messageQueues[remoteJid] = [];
         }
         messageQueues[remoteJid].push(text);
+
+        // Si el cliente envía un mensaje, el sistema deja de necesitar seguimiento (ya respondió)
+        await memoryDb.updateLeadStatus(remoteJid, { needs_followup: false, reset_count: true });
 
         if (messageTimeouts[remoteJid]) {
             clearTimeout(messageTimeouts[remoteJid]);
@@ -173,6 +183,11 @@ async function main() {
     const PORT = config.PORT;
     app.listen(PORT, () => {
         console.log(`[App] 🚀 Servidor Webhook Express escuchando en el puerto ${PORT}...`);
+        
+        // Iniciar motor de seguimientos cada 30 minutos
+        // Ejecución inmediata inicial tras 1 min
+        setTimeout(processFollowups, 60 * 1000); 
+        setInterval(processFollowups, 30 * 60 * 1000); 
     });
 }
 
