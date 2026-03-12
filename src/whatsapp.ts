@@ -70,7 +70,7 @@ export async function sendMedia(remoteJid: string, mediaUrl: string, mediaType: 
             })
         });
         const data = await res.text();
-        console.log(`[WhatsApp] sendMedia response (${res.status}):`, data.substring(0, 300));
+        console.log(`[WhatsApp] sendMedia response (${res.status}):`, data);
     } catch (e) {
         console.error("[WhatsApp] Error sending media:", e);
     }
