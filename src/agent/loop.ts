@@ -31,7 +31,8 @@ Responde ÚNICA Y EXCLUSIVAMENTE con un JSON válido que siga esta estructura:
   "trae_licencia_propia": "Boolean: true si el cliente menciona que YA tiene su licencia de matrimonio",
   "quiere_pagar_o_agendar": "Boolean: true si usa palabras como 'pagar', 'cuanto es el deposito', 'agendar fecha', 'reservar'",
   "quiere_humano": "Boolean: true si pregunta si es un bot, o pide hablar con una persona o asesor",
-  "pide_fotos_o_videos": "Boolean: true si el cliente pide ver fotos, videos, la capilla o imágenes del lugar",
+  "pide_fotos": "Boolean: true si el cliente pide ver FOTOS o imágenes de la capilla o el local",
+  "pide_videos": "Boolean: true si el cliente pide ver VIDEOS o un recorrido filmado del local",
   "cliente_nombre": "String: El nombre del cliente si lo mencionó claramente, sino 'ninguno'",
   "fecha_boda_tentativa": "String: La fecha u ocasión aproximada (ej: '15 de Mayo', 'el próximo sábado', 'Diciembre') o 'ninguno'"
 }`;
@@ -153,17 +154,30 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
             if (extractedData.intencion_principal === 'saludo_general') {
                 datosInyectadosAlSistema += "Saluda amablemente y de inmediato pregunta en qué paquete o locación estaban pensando para su boda. Hazlo todo en una sola idea. ";
             }
+
+            // --- REGLA FASE 4: RECONOCIMIENTO DE MEDIA ---
+            if (extractedData.pide_fotos) {
+                datosInyectadosAlSistema += " AVISO: El cliente quiere ver FOTOS. Dile que con gusto se las envías ahora mismo. ";
+            }
+            if (extractedData.pide_videos) {
+                datosInyectadosAlSistema += " AVISO: El cliente quiere ver VIDEOS. Dile que con gusto le envías un video del local ahora mismo. ";
+            }
         }
 
         // ==========================================
         // CAPA 3: GENERACIÓN DE RESPUESTA LINGÜÍSTICA
         // ==========================================
-        const synthPrompt = `${SYNTHESIS_PROMPT}\n\n=== INSTRUCCIÓN DEL SISTEMA DE NEGOCIO (Acata esto 100% sobre cómo reaccionar al cliente ahora) ===\n${datosInyectadosAlSistema}\n\n=== BASE DE CONOCIMIENTO (Aquí están los detalles: qué incluye la boda, límite exacto de 36 confirmados, domicilio, etc. Úsalo si te preguntan detalles técnicos) ===\n${knowledgeBase}`;
+        // Verificamos si ya hubo mensajes del asistente para no repetir saludo
+        const hasGreeted = history.some(m => m.role === "assistant");
+        const greetingInstruction = hasGreeted 
+            ? "REGLA CRÍTICA: YA TE PRESENTASTE ANTES. No vuelvas a decir 'Hola, soy Cynthia' ni a presentarte. Ve directo al grano." 
+            : "REGLA CRÍTICA: Es el primer mensaje. DEBES saludarte y presentarte como Cynthia.";
+
+        const synthPrompt = `${SYNTHESIS_PROMPT}\n\n${greetingInstruction}\n\n=== INSTRUCCIÓN DEL SISTEMA DE NEGOCIO ===\n${datosInyectadosAlSistema}\n\n=== BASE DE CONOCIMIENTO ===\n${knowledgeBase}`;
         
         const synthMessages: LLMMessage[] = [
             { role: "system", content: synthPrompt },
-            // Solo mandamos un par de mensajes recientes para mantener el hilo natural, pero el core es el dato duro
-            ...history.slice(-4).map(m => ({ role: m.role as any, content: m.content })) 
+            ...history.slice(-6).map(m => ({ role: m.role as any, content: m.content })) 
         ];
 
         const response = await generateResponse(synthMessages);
@@ -185,20 +199,20 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
                 await new Promise(resolve => setTimeout(resolve, 300));
             }
 
-            // --- ENVÍO DE MULTIMEDIA (Fase 4) ---
-            if (extractedData.pide_fotos_o_videos) {
-                const baseUrl = "https://mwp.botlylatam.cloud/assets/media";
-                
-                // Enviar Fotos de la Capilla
-                await sendPresence(chatId, "composing");
-                await new Promise(r => setTimeout(r, 1500));
-                await sendMedia(chatId, `${baseUrl}/capilla1.jpg`, "image", "📸 Nuestra Capilla Elegante");
-                
-                await new Promise(r => setTimeout(r, 1000));
-                await sendMedia(chatId, `${baseUrl}/capilla2.jpg`, "image", "✨ Otro ángulo de nuestra capilla");
+            // --- ENVÍO DE MULTIMEDIA SELECTIVO (Fase 4) ---
+            const baseUrl = "https://mwp.botlylatam.cloud/assets/media";
 
-                // Enviar Video
-                await new Promise(r => setTimeout(r, 1500));
+            if (extractedData.pide_fotos) {
+                await sendPresence(chatId, "composing");
+                await new Promise(r => setTimeout(r, 1000));
+                await sendMedia(chatId, `${baseUrl}/capilla1.jpg`, "image", "📸 Nuestra Capilla Elegante");
+                await new Promise(r => setTimeout(r, 800));
+                await sendMedia(chatId, `${baseUrl}/capilla2.jpg`, "image", "✨ Otro ángulo de nuestra capilla");
+            }
+
+            if (extractedData.pide_videos) {
+                await sendPresence(chatId, "composing");
+                await new Promise(r => setTimeout(r, 1000));
                 await sendMedia(chatId, `${baseUrl}/video_capilla.mp4`, "video", "🎥 Mira un pequeño recorrido de nuestras instalaciones");
             }
 
