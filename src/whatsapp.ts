@@ -76,3 +76,30 @@ export async function sendMedia(remoteJid: string, mediaUrl: string, mediaType: 
         console.error("[WhatsApp] Error sending media:", e);
     }
 }
+
+export async function sendLocation(remoteJid: string, latitude: number, longitude: number, name: string, address: string) {
+    const number = remoteJid.includes("@") ? remoteJid.split("@")[0] : remoteJid;
+
+    console.log(`[WhatsApp] Enviando ubicación a: ${number}`);
+
+    try {
+        const res = await fetch(`${config.EVOLUTION_API_URL}/message/sendLocation/${config.EVOLUTION_INSTANCE_NAME}`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "apikey": config.EVOLUTION_API_KEY as string
+            },
+            body: JSON.stringify({
+                number: number,
+                latitude: latitude,
+                longitude: longitude,
+                name: name,
+                address: address
+            })
+        });
+        const data = await res.text();
+        console.log(`[WhatsApp] sendLocation response (${res.status}):`, data);
+    } catch (e) {
+        console.error("[WhatsApp] Error sending location:", e);
+    }
+}

@@ -1,6 +1,6 @@
 import { LLMMessage, generateResponse, generateJSON } from "../llm/index.js";
 import { memoryDb } from "../db/index.js";
-import { sendText, sendPresence, sendMedia } from "../whatsapp.js";
+import { sendText, sendPresence, sendMedia, sendLocation } from "../whatsapp.js";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -152,7 +152,12 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
             
             // Si la intención es solo saludo general
             if (extractedData.intencion_principal === 'saludo_general') {
-                datosInyectadosAlSistema += "Saluda amablemente y de inmediato pregunta en qué paquete o locación estaban pensando para su boda. Hazlo todo en una sola idea. ";
+                datosInyectadosAlSistema += "Saluda amablemente y pregúntale: ¿Qué tipo de ceremonia les interesa? Tenemos Boda Sencilla, Boda en Capilla Elegante y Boda a Domicilio. Hazlo todo en una sola idea. ";
+            }
+
+            // Si el cliente pregunta por la ubicación
+            if (extractedData.intencion_principal === 'ubicacion') {
+                datosInyectadosAlSistema += " AVISO: El cliente pregunta por la ubicación. Dile nuestra dirección y que le envías el pin de ubicación ahora mismo. ";
             }
 
             // --- REGLA FASE 4: RECONOCIMIENTO DE MEDIA ---
@@ -213,6 +218,13 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
                 await sendPresence(chatId, "composing");
                 await new Promise(r => setTimeout(r, 1000));
                 await sendMedia(chatId, `${baseUrl}/video_capilla.mp4`, "video", "🎥 Mira un pequeño recorrido de nuestras instalaciones");
+            }
+
+            // --- ENVÍO DE UBICACIÓN (PIN NATIVO) ---
+            if (extractedData.intencion_principal === 'ubicacion') {
+                await sendPresence(chatId, "composing");
+                await new Promise(r => setTimeout(r, 1000));
+                await sendLocation(chatId, 34.0744, -118.0371, "My Wedding Palace", "10918 Main St Suite B, El Monte, CA 91731");
             }
 
             return;
