@@ -1,12 +1,12 @@
-# 🤖 COMANDOS DE CYNTHIA - My Wedding Palace
+# 🤖 COMANDOS DE MWP AI - My Wedding Palace
 
 ## 📱 COMANDOS DESDE TU CELULAR ADMIN (+51992371285)
 *Escríbele al número de la empresa desde tu celular personal*
 
 | Comando | Qué hace |
 |---------|----------|
-| `/apagarbot` | Apaga Cynthia para TODOS los chats |
-| `/prenderbot` | Prende Cynthia para TODOS (sin borrar memorias) |
+| `/apagarbot` | Apaga MWP AI para TODOS los chats |
+| `/prenderbot` | Prende MWP AI para TODOS (sin borrar memorias) |
 | `/reset +13235551234` | Borra memoria de ese cliente Y reactiva su chat |
 | `/activar +13235551234` | Reactiva ese chat SIN borrar su memoria |
 
@@ -19,15 +19,15 @@
 |---------|----------|
 | `/apagarbot` | Apaga Cynthia globalmente |
 | `/prenderbot` | Prende Cynthia globalmente |
-| `/activar` | Reactiva Cynthia en ESE chat específico |
+| `/activar` | Reactiva MWP AI en ESE chat específico |
 | `/reset` | Borra memoria y reactiva ESE chat |
-| *Cualquier mensaje normal* | Pausa automáticamente a Cynthia en ese chat |
+| *Cualquier mensaje normal* | Pausa automáticamente a MWP AI en ese chat |
 
 ---
 
 ## 🚨 ALERTAS AUTOMÁTICAS
 Cuando un cliente quiere agendar, pagar o hablar con un humano,
-Cynthia envía automáticamente una alerta al grupo **"Alertas MWP"** con:
+MWP AI envía automáticamente una alerta al grupo **"Alertas MWP"** con:
 - Número del cliente (link clickeable wa.me/...)
 - Motivo de la derivación
 
@@ -44,7 +44,7 @@ git add -A && git commit -m "actualizar info" && git push
 ```
 4. Dockploy actualiza automáticamente en ~1 minuto ✅
 
-### Cambiar reglas de comportamiento de Cynthia:
+### Cambiar reglas de comportamiento de MWP AI:
 1. Edita `src/agent/loop.ts`
 2. Guarda y sube con el mismo comando de arriba
 
@@ -60,7 +60,7 @@ git add -A && git commit -m "actualizar info" && git push
 
 | Servicio | URL |
 |---------|-----|
-| Bot Cynthia (VPS) | https://mwp.botlylatam.cloud |
+| Bot MWP AI (VPS) | https://mwp.botlylatam.cloud |
 | Webhook Evolution | https://mwp.botlylatam.cloud/webhook |
 | Evolution API Panel | https://evolutionapi.botlylatam.cloud |
 | Dockploy Panel | http://72.61.131.247:3000 |

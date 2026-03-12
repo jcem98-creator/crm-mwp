@@ -96,12 +96,12 @@ async function main() {
         if (!fromMe && isAdmin) {
             if (text.trim() === "/apagarbot") {
                 masterSwitch.isOn = false;
-                await sendText(remoteJid, "🤖 Cynthia dice: IA APAGADA GLOBALMENTE. Descansaré hasta que digas /prenderbot.");
+                await sendText(remoteJid, "🤖 MWP AI dice: IA APAGADA GLOBALMENTE. Descansaré hasta que digas /prenderbot.");
                 return;
             }
             if (text.trim() === "/prenderbot") {
                 masterSwitch.isOn = true;
-                await sendText(remoteJid, "🤖 Cynthia dice: IA ENCENDIDA GLOBALMENTE. ¡A vender!");
+                await sendText(remoteJid, "🤖 MWP AI dice: IA ENCENDIDA GLOBALMENTE. ¡A vender!");
                 return;
             }
             // /reset NUMERO - resetear un chat específico desde admin
@@ -110,7 +110,7 @@ async function main() {
                 const targetJid = `${targetNumber}@s.whatsapp.net`;
                 await memoryDb.clearMemory(targetJid);
                 delete pausedUsers[targetJid];
-                await sendText(remoteJid, `🤖 Cynthia dice: Memoria borrada y bot reactivado para ${targetNumber}.`);
+                await sendText(remoteJid, `🤖 MWP AI dice: Memoria borrada y bot reactivado para ${targetNumber}.`);
                 return;
             }
             // /activar NUMERO - reactivar un chat sin borrar memoria
@@ -118,7 +118,7 @@ async function main() {
                 const targetNumber = text.trim().replace("/activar ", "").replace(/\D/g, "");
                 const targetJid = `${targetNumber}@s.whatsapp.net`;
                 delete pausedUsers[targetJid];
-                await sendText(remoteJid, `🤖 Cynthia dice: Bot reactivado para ${targetNumber} (memoria intacta).`);
+                await sendText(remoteJid, `🤖 MWP AI dice: Bot reactivado para ${targetNumber} (memoria intacta).`);
                 return;
             }
         }
@@ -127,23 +127,23 @@ async function main() {
         if (fromMe) {
             if (text.trim() === "/apagarbot") {
                 masterSwitch.isOn = false;
-                await sendText(remoteJid, "🤖 Cynthia dice: IA APAGADA GLOBALMENTE. Descansaré hasta que digas /prenderbot.");
+                await sendText(remoteJid, "🤖 MWP AI dice: IA APAGADA GLOBALMENTE. Descansaré hasta que digas /prenderbot.");
                 return;
             }
             if (text.trim() === "/prenderbot") {
                 masterSwitch.isOn = true;
-                await sendText(remoteJid, "🤖 Cynthia dice: IA ENCENDIDA GLOBALMENTE. ¡A vender!");
+                await sendText(remoteJid, "🤖 MWP AI dice: IA ENCENDIDA GLOBALMENTE. ¡A vender!");
                 return;
             }
             if (text.trim() === "/activar") {
                 delete pausedUsers[remoteJid];
-                await sendText(remoteJid, "🤖 Cynthia dice: Bot REACTIVADO en este chat. Seguiré atendiendo a este cliente.");
+                await sendText(remoteJid, "🤖 MWP AI dice: Bot REACTIVADO en este chat. Seguiré atendiendo a este cliente.");
                 return;
             }
             if (text.trim() === "/reset") {
                 await memoryDb.clearMemory(remoteJid);
                 delete pausedUsers[remoteJid];
-                await sendText(remoteJid, "🤖 Cynthia dice: Memoria borrada y bot reactivado para este chat.");
+                await sendText(remoteJid, "🤖 MWP AI dice: Memoria borrada y bot reactivado para este chat.");
                 return;
             }
 

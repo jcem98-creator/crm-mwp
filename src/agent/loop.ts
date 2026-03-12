@@ -114,7 +114,7 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
             else if (extractedData.quiere_humano) motivo = "Pidió hablar con un humano";
             
             // Enviar alerta al grupo
-            sendText(GRUPO_ALERTAS, `🚨 *ALERTA DE CYNTHIA* 🚨\n\n📱 Cliente: wa.me/${cleanNum}\n📋 Motivo: ${motivo}\n\n¡Atiéndanlo pronto!`).catch(() => {});
+            sendText(GRUPO_ALERTAS, `🚨 *ALERTA DE MWP AI* 🚨\n\n📱 Cliente: wa.me/${cleanNum}\n📋 Motivo: ${motivo}\n\n¡Atiéndanlo pronto!`).catch(() => {});
         }
         else {
             // Lógica de Información (Sin escape a humano)
