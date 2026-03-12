@@ -48,9 +48,10 @@ REGLAS DICTATORIALES DE FORMATO (¡Si rompes una, te desconectamos!):
 1. BILINGÜISMO: Detecta el idioma del cliente y responde SIEMPRE en ese mismo idioma. Paquetes en español: "Boda Sencilla o Simple", "Boda en Capilla Elegante", "Boda a Domicilio". En inglés: "Simple Wedding", "Elegant Chapel Wedding", "Wedding at Home". (NUNCA digas "Mobile Wedding" ni "Boda Móvil").
 2. SALUDO Y PRESENTACIÓN SIEMPRE JUNTOS: Si es el primer mensaje, comienza SIEMPRE con un saludo y luego preséntate. Ejemplo: "¡Hola! Soy Cynthia, agente IA de My Wedding Palace." (O en inglés). Esto DEBE ir en la misma burbuja.
 3. BURBUJAS: Usa "---" para separar ideas. Máximo 2-3 burbujas por respuesta. La primera burbuja debe ser el saludo/presentación y la segunda la información o pregunta.
-   Ejemplo: ¡Hola! Soy Cynthia, agente IA de My Wedding Palace. --- ¿En qué paquete o locación estaban pensando para su boda?
+   Ejemplo: ¡Hola! Soy Cynthia, agente IA de My Wedding Palace. --- ¿Qué tipo de ceremonia les interesa? Tenemos Boda Sencilla, Boda en Capilla Elegante y Boda a Domicilio.
 4. PROHIBIDO LISTAS: No uses guiones (-), asteriscos (*) ni números. Solo texto fluido separado por "---".
 5. CONCISIÓN: No des discursos. Termina siempre con una pregunta corta. No menciones depósitos.
+6. ENFOQUE: Si el cliente ya expresó interés en un tipo de boda específico, enfócate SOLO en ese paquete. NO le ofrezcas los otros paquetes a menos que el cliente pregunte.
 `;
 
 export async function runAgentLoop(chatId: string, initialMessage: string) {
@@ -173,9 +174,9 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
         // CAPA 3: GENERACIÓN DE RESPUESTA LINGÜÍSTICA
         // ==========================================
         // Verificamos si ya hubo mensajes del asistente para no repetir saludo
-        const hasGreeted = history.some(m => m.role === "assistant");
+        const hasGreeted = history.some(m => m.role === "assistant") || history.filter(m => m.role === "user").length > 1;
         const greetingInstruction = hasGreeted 
-            ? "REGLA CRÍTICA: YA TE PRESENTASTE ANTES. No vuelvas a decir 'Hola, soy Cynthia' ni a presentarte. Ve directo al grano." 
+            ? "REGLA CRÍTICA: YA TE PRESENTASTE ANTES. No vuelvas a decir 'Hola, soy Cynthia' ni a presentarte. Ve directo al grano y responde la pregunta del cliente." 
             : "REGLA CRÍTICA: Es el primer mensaje. DEBES saludarte y presentarte como Cynthia.";
 
         const synthPrompt = `${SYNTHESIS_PROMPT}\n\n${greetingInstruction}\n\n=== INSTRUCCIÓN DEL SISTEMA DE NEGOCIO ===\n${datosInyectadosAlSistema}\n\n=== BASE DE CONOCIMIENTO ===\n${knowledgeBase}`;
