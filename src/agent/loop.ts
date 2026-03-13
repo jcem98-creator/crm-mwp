@@ -30,11 +30,11 @@ El cliente puede escribir en ESPAÑOL o INGLÉS. Detecta el idioma y extrae los 
 
 Responde ÚNICA Y EXCLUSIVAMENTE con un JSON válido:
 {
-  "intencion_principal": "String: basada SOLO en el último mensaje => 'consultar_precio' (price/cost/cuanto cuesta), 'capacidad_invitados' (capacity/how many guests), 'pagar_reservar' (pay/book/reserve), 'hablar_con_humano' (talk to a person/human), 'saludo_general' (hi/hello/hola), 'ubicacion' (where are you/address/dirección), 'tramite_legal' (legal/immigration), 'otra' (anything else including simple confirmations)",
+  "intencion_principal": "String: basada SOLO en el último mensaje => 'consultar_precio' (price/cost/cuanto cuesta), 'capacidad_invitados' (capacity/how many guests), 'pagar_reservar' (pay/book/reserve/disponibilidad/availability/tiene fecha disponible/do you have availability/quiero agendar/quiero reservar), 'hablar_con_humano' (talk to a person/human), 'saludo_general' (hi/hello/hola), 'ubicacion' (where are you/address/dirección), 'tramite_legal' (legal/immigration), 'otra' (anything else including simple confirmations)",
   "tipo_servicio_mencionado": "String: 'capilla' (chapel), 'sencilla' (simple), 'domicilio' (at home/beach/park/external location), o 'ninguno'",
   "dia_mencionado": "String: day of week in Spanish ('lunes','martes','miercoles','jueves','viernes','sabado','domingo') or 'ninguno'. Convert English days to Spanish.",
   "trae_licencia_propia": "Boolean: true si menciona que YA tiene su marriage license/licencia de matrimonio",
-  "quiere_pagar_o_agendar": "Boolean: true si usa palabras como 'pay', 'book', 'reserve', 'pagar', 'deposito', 'agendar', 'reservar'",
+  "quiere_pagar_o_agendar": "Boolean: true si habla de disponibilidad, fecha específica, reservar, pagar, agendar. También true si pregunta '¿tienen disponibilidad?', '¿puedo agendar el [fecha]?', 'availability', 'book a date'.",
   "quiere_humano": "Boolean: true si pregunta si es bot, o pide hablar con persona/human/agent",
   "cliente_nombre": "String: nombre del cliente si lo mencionó, sino 'ninguno'",
   "fecha_boda_tentativa": "String: fecha aproximada o 'ninguno'",
@@ -58,6 +58,7 @@ REGLAS DICTATORIALES DE FORMATO (¡Si rompes una, te desconectamos!):
 4. PROHIBIDO LISTAS: No uses guiones (-), asteriscos (*) ni números. Solo texto fluido separado por "---".
 5. CONCISIÓN: No des discursos. Termina siempre con una pregunta corta. No menciones depósitos.
 6. ENFOQUE: Si el cliente ya expresó interés en un tipo de boda específico, enfócate SOLO en ese paquete. NO le ofrezcas los otros paquetes a menos que el cliente pregunte.
+7. PROHIBIDO ABSOLUTO: NUNCA confirmes disponibilidad de fechas. NUNCA digas 'tenemos disponibilidad para el [fecha]' ni nada similar. Tú no tienes acceso al calendario. NUNCA pidas nombres completos, números de contacto ni datos de la pareja. Eso lo coordina el asesor humano.
 `;
 
 export async function runAgentLoop(chatId: string, initialMessage: string) {
