@@ -144,14 +144,14 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
                       if (extractedData.trae_licencia_propia) precioDom = extractedData.dia_mencionado === 'domingo' ? "$500" : "$400";
                       datosInyectadosAlSistema += `Precios Boda a Domicilio: El costo es ${precioDom} (ya incluye descuento si traen licencia). A más de 20 millas se cobran $100 extra. `;
                  } else if (extractedData.tipo_servicio_mencionado === 'sencilla' || (extractedData.dia_mencionado && ['lunes', 'martes', 'miercoles', 'jueves'].includes(extractedData.dia_mencionado))) {
-                      datosInyectadosAlSistema += "Boda Sencilla (Solo Lunes a Jueves): Precio $445 fijos. Incluye capilla, ministro y documentos. NO incluye fotos ni música. ";
+                      datosInyectadosAlSistema += "Boda Sencilla (Solo Lunes a Jueves): Precio $445 fijos. Incluye: Licencia del condado, certificado, ceremonia por ministro profesional, notary public y estacionamiento. NO incluye música de ambiente ni fotografía. ";
                       if (extractedData.trae_licencia_propia) {
-                           datosInyectadosAlSistema += "IMPORTANTE: Aclárale al cliente que para la Boda Sencilla NO hay opción ni descuento por traer su propia licencia, el precio sigue siendo $445 fijos. ";
+                           datosInyectadosAlSistema += "IMPORTANTE: Aclárale al cliente que para la Boda Sencilla NO hay descuento por traer su propia licencia, el precio sigue siendo $445 fijos. ";
                       }
                  } else if (extractedData.tipo_servicio_mencionado === 'capilla' || (extractedData.dia_mencionado && ['viernes', 'sabado', 'domingo'].includes(extractedData.dia_mencionado))) {
                       let precioCap = extractedData.dia_mencionado === 'domingo' ? "$595" : "$495";
                       if (extractedData.trae_licencia_propia) precioCap = extractedData.dia_mencionado === 'domingo' ? "$350" : "$250";
-                      datosInyectadosAlSistema += `Boda en Capilla Elegante (Fin de semana): El costo es ${precioCap} (ya incluye descuento si traen licencia). Incluye TODO lo de la sencilla PLUS Música y Fotografía de regalo. `;
+                      datosInyectadosAlSistema += `Boda en Capilla Elegante (Viernes a Domingo): El costo es ${precioCap}. Incluye: Licencia del condado, certificado, ministro profesional, notary public, estacionamiento, música de ambiente y fotografía de regalo. `;
                  } else {
                       datosInyectadosAlSistema += "Regla: No enlistes todos los paquetes de golpe. Dile que la Boda Sencilla (L-J) cuesta $445 y la Capilla Elegante (Fin de semana) inicia en $495. A Domicilio desde $545. Pregúntale qué día tenían pensado casarse. ";
                  }
