@@ -149,8 +149,6 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
                  } else {
                       datosInyectadosAlSistema += "Regla: No enlistes todos los paquetes de golpe. Dile que la Boda Sencilla (L-J) cuesta $445 y la Capilla Elegante (Fin de semana) inicia en $495. A Domicilio desde $545. Pregúntale qué día tenían pensado casarse. ";
                  }
-                 // Ofrecer fotos/video proactivamente después de dar precios
-                 datosInyectadosAlSistema += "ADEMÁS, al final de tu respuesta de precios, ofrécele amablemente si desea ver fotos o un video de las instalaciones. ";
             }
             
             // Si la intención es solo saludo general
