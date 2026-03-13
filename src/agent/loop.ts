@@ -22,20 +22,26 @@ try {
 // -----------------------------------------
 // La IA asume el rol exclusivo de un intérprete lingüístico que no sabe NADA de reglas de negocio, 
 // solo extrae variables del mensaje del usuario (en español informal/roto).
-const EXTRACTION_PROMPT = `Tu único trabajo es leer el último mensaje del cliente en su contexto y extraer datos estructurados. Eres un analizador semántico, no un vendedor.
-Responde ÚNICA Y EXCLUSIVAMENTE con un JSON válido que siga esta estructura:
+const EXTRACTION_PROMPT = `Tu único trabajo es leer el ÚLTIMO mensaje del cliente y extraer datos estructurados. Eres un analizador semántico, no un vendedor.
+
+REGLA CRÍTICA: Analiza SOLO el último mensaje del cliente, NO arrastres intenciones de mensajes anteriores. Si el último mensaje es solo una confirmación o respuesta corta como "ok", "thanks", "gracias", "bien", "good", "perfecto", "got it", "cool", la intención debe ser 'otra' y todos los booleanos deben ser false.
+
+El cliente puede escribir en ESPAÑOL o INGLÉS. Detecta el idioma y extrae los datos en cualquier caso.
+
+Responde ÚNICA Y EXCLUSIVAMENTE con un JSON válido:
 {
-  "intencion_principal": "String: una de las siguientes opciones => 'consultar_precio', 'capacidad_invitados', 'pagar_reservar', 'hablar_con_humano', 'saludo_general', 'ubicacion', 'tramite_legal', 'otra'",
-  "tipo_servicio_mencionado": "String: 'capilla', 'sencilla', 'domicilio', o 'ninguno' (nota: asume domicilio si menciona playa, parque o locación externa)",
-  "dia_mencionado": "String: día de la semana si lo mencionó ('lunes', 'sabado', etc.) o 'ninguno'",
-  "trae_licencia_propia": "Boolean: true si el cliente menciona que YA tiene su licencia de matrimonio",
-  "quiere_pagar_o_agendar": "Boolean: true si usa palabras como 'pagar', 'cuanto es el deposito', 'agendar fecha', 'reservar'",
-  "quiere_humano": "Boolean: true si pregunta si es un bot, o pide hablar con una persona o asesor",
-  "cliente_nombre": "String: El nombre del cliente si lo mencionó claramente, sino 'ninguno'",
-  "fecha_boda_tentativa": "String: La fecha u ocasión aproximada (ej: '15 de Mayo', 'el próximo sábado', 'Diciembre') o 'ninguno'",
-  "pide_fotos": "Boolean: true SOLO si en el ÚLTIMO mensaje (no en mensajes anteriores) el cliente pide ver FOTOS o imágenes. Si el último mensaje habla de otra cosa, debe ser false.",
-  "pide_videos": "Boolean: true SOLO si en el ÚLTIMO mensaje (no en mensajes anteriores) el cliente pide ver VIDEOS o un recorrido. Si el último mensaje habla de otra cosa, debe ser false."
+  "intencion_principal": "String: basada SOLO en el último mensaje => 'consultar_precio' (price/cost/cuanto cuesta), 'capacidad_invitados' (capacity/how many guests), 'pagar_reservar' (pay/book/reserve), 'hablar_con_humano' (talk to a person/human), 'saludo_general' (hi/hello/hola), 'ubicacion' (where are you/address/dirección), 'tramite_legal' (legal/immigration), 'otra' (anything else including simple confirmations)",
+  "tipo_servicio_mencionado": "String: 'capilla' (chapel), 'sencilla' (simple), 'domicilio' (at home/beach/park/external location), o 'ninguno'",
+  "dia_mencionado": "String: day of week in Spanish ('lunes','martes','miercoles','jueves','viernes','sabado','domingo') or 'ninguno'. Convert English days to Spanish.",
+  "trae_licencia_propia": "Boolean: true si menciona que YA tiene su marriage license/licencia de matrimonio",
+  "quiere_pagar_o_agendar": "Boolean: true si usa palabras como 'pay', 'book', 'reserve', 'pagar', 'deposito', 'agendar', 'reservar'",
+  "quiere_humano": "Boolean: true si pregunta si es bot, o pide hablar con persona/human/agent",
+  "cliente_nombre": "String: nombre del cliente si lo mencionó, sino 'ninguno'",
+  "fecha_boda_tentativa": "String: fecha aproximada o 'ninguno'",
+  "pide_fotos": "Boolean: true SOLO si en el ÚLTIMO mensaje pide ver FOTOS/photos/images. Si habla de otra cosa, DEBE ser false.",
+  "pide_videos": "Boolean: true SOLO si en el ÚLTIMO mensaje pide ver VIDEOS/video/tour. Si habla de otra cosa, DEBE ser false."
 }`;
+
 
 // -----------------------------------------
 // CAPA 3: GENERADOR CONVERSACIONAL (PINTOR)
