@@ -161,7 +161,7 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
                       if (extractedData.trae_licencia_propia) precioCap = extractedData.dia_mencionado === 'domingo' ? "$350" : "$250";
                       datosInyectadosAlSistema += `Boda en Capilla Elegante (Viernes a Domingo): El costo es ${precioCap}. Incluye: Licencia del condado, certificado, ministro profesional, notary public, estacionamiento, música de ambiente y fotografía de regalo. `;
                  } else {
-                      datosInyectadosAlSistema += "Regla: No enlistes todos los paquetes de golpe. Dile que la Boda Sencilla (L-J) cuesta $445 y la Capilla Elegante (Fin de semana) inicia en $495. A Domicilio desde $545. Pregúntale qué día tenían pensado casarse. ";
+                       datosInyectadosAlSistema += "El cliente no ha especificado qué tipo de boda le interesa todavía. NO des precios aún. Pregúntale cuál de nuestras opciones le interesa: Boda Sencilla o Simple, Boda en Capilla Elegante, o Boda a Domicilio. Los precios se dan DESPUÉS de que elijan el tipo de boda. ";
                  }
             }
             
