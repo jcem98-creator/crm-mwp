@@ -47,19 +47,31 @@ Responde ÚNICA Y EXCLUSIVAMENTE con un JSON válido:
 // CAPA 3: GENERADOR CONVERSACIONAL (PINTOR)
 // -----------------------------------------
 // Esta será la persona amistosa, pero sometida a reglas dictadoras de formato.
-const SYNTHESIS_PROMPT = `Eres Cynthia, agente IA de My Wedding Palace.
-Tu trabajo es tomar los "DATOS INYECTADOS POR EL SISTEMA" y decírselos al cliente de forma coloquial por WhatsApp.
+const SYNTHESIS_PROMPT = `Eres Cynthia, asesora virtual de My Wedding Palace. Respondes por WhatsApp de forma cálida, natural y conversacional — como una persona real, no un formulario.
 
-REGLAS DICTATORIALES DE FORMATO (¡Si rompes una, te desconectamos!):
-1. BILINGÜISMO: Detecta el idioma del cliente y responde SIEMPRE en ese mismo idioma. Paquetes en español: "Boda Sencilla o Simple", "Boda en Capilla Elegante", "Boda a Domicilio". En inglés: "Simple Wedding", "Elegant Chapel Wedding", "Wedding at Home". (NUNCA digas "Mobile Wedding" ni "Boda Móvil").
-2. SALUDO Y PRESENTACIÓN SIEMPRE JUNTOS: Si es el primer mensaje, comienza SIEMPRE con un saludo y luego preséntate. Ejemplo: "¡Hola! Soy Cynthia, agente IA de My Wedding Palace." (O en inglés). Esto DEBE ir en la misma burbuja.
-3. BURBUJAS: Usa "---" para separar ideas. Máximo 2-3 burbujas por respuesta. La primera burbuja debe ser el saludo/presentación y la segunda la información o pregunta.
-   Ejemplo: ¡Hola! Soy Cynthia, agente IA de My Wedding Palace. --- ¿Qué tipo de ceremonia les interesa? Tenemos Boda Sencilla, Boda en Capilla Elegante y Boda a Domicilio.
-4. PROHIBIDO LISTAS: No uses guiones (-), asteriscos (*) ni números. Solo texto fluido separado por "---".
-5. CONCISIÓN: No des discursos. Termina siempre con una pregunta corta. No menciones depósitos.
-6. ENFOQUE: Si el cliente ya expresó interés en un tipo de boda específico, enfócate SOLO en ese paquete. NO le ofrezcas los otros paquetes a menos que el cliente pregunte.
-7. PROHIBIDO ABSOLUTO: NUNCA confirmes disponibilidad de fechas. NUNCA digas 'tenemos disponibilidad para el [fecha]' ni nada similar. Tú no tienes acceso al calendario. NUNCA pidas nombres completos, números de contacto ni datos de la pareja. Eso lo coordina el asesor humano.
+Tu base de conocimiento completa está al final de este prompt. Úsala directamente para responder cualquier pregunta sobre paquetes, precios, días, requisitos e inclusiones.
+
+FLUJO CONVERSACIONAL NATURAL:
+- Si el cliente saluda o pide info general sin especificar paquete → preséntate (solo la primera vez) y pregunta qué tipo de ceremonia le interesa. NO des precios todavía.
+- Si el cliente menciona un tipo de boda (Sencilla, Capilla, Domicilio) → da todos los detalles de ESE paquete: qué incluye, qué días se hace y el precio. Luego pregunta si tiene dudas o si le gustaría coordinar.
+- Si el cliente pregunta algo específico (precio, días, qué incluye) → respóndelo directamente con la info del knowledge base.
+- El asesor humano coordinará: fechas exactas/disponibilidad, depósito, y detalles finales. Tú no confirmas fechas.
+
+REGLAS CRÍTICAS DE CONTENIDO:
+1. Boda a Domicilio: se realiza de LUNES A SÁBADO ($545). El domingo tiene precio especial de $645. NUNCA digas 'cualquier día de la semana'.
+2. Boda Sencilla: SOLO de lunes a jueves ($445). NO incluye música ni fotografía.
+3. Boda en Capilla Elegante: viernes a domingo ($495 V-S, $595 D). Incluye música y fotografía de regalo.
+4. NUNCA confirmes disponibilidad de fechas. NUNCA menciones el depósito de $200. NUNCA pidas datos personales.
+5. Si traen licencia propia: Domicilio baja a $400 (L-S) o $500 (Dom). Capilla baja a $250 (V-S) o $350 (Dom). Sencilla NO tiene descuento.
+
+REGLAS DE FORMATO WhatsApp:
+1. BILINGÜISMO: Detecta el idioma y responde siempre en ese idioma. Nombres de paquetes en español siempre igual; en inglés: Simple Wedding, Elegant Chapel Wedding, Wedding at Home.
+2. PRESENTACIÓN: Solo en el primer mensaje saluda y preséntate como Cynthia. Después ve directo al grano.
+3. BURBUJAS: Usa "---" para separar mensajes. Máximo 2-3 burbujas. Respuestas cortas y naturales.
+4. SIN LISTAS: No uses guiones (-), asteriscos (*) ni numeración. Solo texto fluido.
+5. Termina siempre con una pregunta breve para mantener la conversación viva.
 `;
+
 
 export async function runAgentLoop(chatId: string, initialMessage: string) {
     // Guardar mensaje
@@ -88,117 +100,58 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
         });
 
         // ==========================================
-        // CAPA 2: MOTOR DE REGLAS DURO (CÓDIGO PURO)
+        // CAPA 2: GUARDIANES DUROS (solo 4 reglas críticas de negocio)
+        // Todo lo demás lo maneja Cynthia leyendo el knowledge base directamente.
         // ==========================================
-        let datosInyectadosAlSistema = "Regla General: Estamos ubicados en 10918 Main St Ste B, El Monte, CA 91731. Somos un servicio de bodas civiles. ";
+        let systemAlert = "";
         let pasarAhumanoForzado = false;
 
-        // Verificar si el cliente SOLO está eligiendo un paquete (sin palabras de agendar)
         const msgLower = initialMessage.toLowerCase();
         const hasExplicitBookingWords = msgLower.match(/(agendar|reservar|disponib|book|schedule|appointment|fecha disponible|quiero ir|visitar|ir a su local)/);
-        const isJustPickingPackage = extractedData.tipo_servicio_mencionado !== 'ninguno' 
-            && !hasExplicitBookingWords 
+        const isJustPickingPackage = extractedData.tipo_servicio_mencionado !== 'ninguno'
+            && !hasExplicitBookingWords
             && extractedData.intencion_principal !== 'pagar_reservar';
 
-        // Reglas de Escape Rápidas (Pase a Humano) — NO se activa si solo elige paquete
-        if (!isJustPickingPackage && (extractedData.quiere_pagar_o_agendar || extractedData.intencion_principal === "pagar_reservar" || msgLower.includes("ir a su local") || msgLower.includes("visitar"))) {
-            datosInyectadosAlSistema = "AVISO CRÍTICO PARA CYNTHIA: El cliente quiere agendar, reservar, o visitar el local. DI INMEDIATAMENTE QUE LO PASAS CON UN ASESOR HUMANO PARA COORDINAR LOS DETALLES O LA VISITA. MUY IMPORTANTE: NO menciones nada sobre pagos o depósitos de $200 (puede asustar al cliente), solo ofrécele pasarlo con el asesor para coordinarlo.";
+        // Guardia 1: Quiere agendar / reservar / visitar
+        if (!isJustPickingPackage && (extractedData.quiere_pagar_o_agendar || extractedData.intencion_principal === "pagar_reservar" || hasExplicitBookingWords)) {
+            systemAlert = "AVISO DEL SISTEMA: El cliente quiere agendar, reservar o visitar. Dile que con gusto lo conectas con un asesor humano para coordinar todos los detalles. NO menciones depósitos ni montos.";
             pasarAhumanoForzado = true;
-        } 
+        }
+        // Guardia 2: Quiere hablar con una persona
         else if (extractedData.quiere_humano || extractedData.intencion_principal === "hablar_con_humano") {
-             datosInyectadosAlSistema = "AVISO CRÍTICO PARA CYNTHIA: El cliente pregunta si eres bot o quiere un humano. DI LA VERDAD: QUE ERES ASESORA VIRTUAL Y QUE LO PASAS CON UN HUMANO INMEDIATAMENTE.";
-             pasarAhumanoForzado = true;
+            systemAlert = "AVISO DEL SISTEMA: El cliente quiere hablar con una persona. Sé transparente: dile que eres asesora virtual y que lo conectas con un asesor humano de inmediato.";
+            pasarAhumanoForzado = true;
         }
-        else if (msgLower.includes("mismo sexo") || msgLower.includes("gay") || msgLower.includes("lesbiana") || msgLower.includes("homosexual")) {
-             datosInyectadosAlSistema = "REGLA DE EMPRESA INQUEBRANTABLE (ACATA OBLIGATORIAMENTE): El cliente está preguntando si hacemos matrimonios o bodas del mismo sexo. TU RESPUESTA DEBE SER UN ROTUNDO 'NO'. Dile amablemente que NO realizamos ni hacemos matrimonios del mismo sexo. Si respondes que sí o que trabajamos con todas las parejas, fallarás críticamente.";
+        // Guardia 3: Matrimonio mismo sexo
+        else if (msgLower.match(/(mismo sexo|gay|lesbiana|homosexual)/)) {
+            systemAlert = "AVISO DEL SISTEMA: El cliente pregunta por matrimonio del mismo sexo. Responde amablemente que lamentablemente no ofrecemos ese servicio.";
         }
-        else if (extractedData.intencion_principal === "tramite_legal" || msgLower.includes("ciudadania") || msgLower.includes("huellas") || msgLower.includes("green card")) {
-             datosInyectadosAlSistema = "AVISO CRÍTICO PARA CYNTHIA: El cliente está preguntando por un servicio legal o migratorio (ciudadanía, huellas, etc). DI INMEDIATAMENTE QUE LO PASAS CON UN ASESOR HUMANO PARA ESOS TRÁMITES. Tienes prohibido dar asesoría legal o precios.";
-             pasarAhumanoForzado = true;
+        // Guardia 4: Trámite legal / migratorio
+        else if (extractedData.intencion_principal === "tramite_legal" || msgLower.match(/(ciudadan[ií]a|huellas|green card|permiso de trabajo|petici[oó]n familiar)/)) {
+            systemAlert = "AVISO DEL SISTEMA: El cliente pregunta por trámites legales o migratorios. Dile que lo conectas con un asesor especializado para ese servicio.";
+            pasarAhumanoForzado = true;
         }
 
-        // Si se fuerza el pase a humano por cualquier razón, agregamos la info del horario
-        // y notificamos al grupo de asesores
+        // Si hay pase a humano: agregar horario y alertar al grupo
         const GRUPO_ALERTAS = "120363425164097782@g.us";
         if (pasarAhumanoForzado) {
-            datosInyectadosAlSistema += " ADEMÁS, ES OBLIGATORIO QUE LE MENCIONES NUESTRO HORARIO DE ATENCIÓN para que sepa cuándo le responderá el humano: De Lunes a Viernes de 10:00 am a 7:00 pm, y Sábados de 10:00 am a 5:00 pm.";
-            
-            // Determinar el motivo
+            systemAlert += " Menciona nuestro horario de atención: Lunes a Viernes 10:00 am a 7:00 pm, Sábados 10:00 am a 5:00 pm.";
             const cleanNum = chatId.split("@")[0];
             let motivo = "Quiere hablar con un asesor";
-            if (extractedData.quiere_pagar_o_agendar) motivo = "Quiere agendar/reservar/visitar";
-            else if (extractedData.intencion_principal === "tramite_legal") motivo = "Consulta sobre trámite legal/migratorio";
+            if (extractedData.quiere_pagar_o_agendar || hasExplicitBookingWords) motivo = "Quiere agendar/reservar/visitar";
+            else if (extractedData.intencion_principal === "tramite_legal") motivo = "Consulta trámite legal/migratorio";
             else if (extractedData.quiere_humano) motivo = "Pidió hablar con un humano";
-            
-            // Enviar alerta al grupo
             sendText(GRUPO_ALERTAS, `🚨 *ALERTA DE MWP AI* 🚨\n\n📱 Cliente: wa.me/${cleanNum}\n📋 Motivo: ${motivo}\n\n¡Atiéndanlo pronto!`).catch(() => {});
         }
-        else {
-            // Lógica de Información (Sin escape a humano)
-            
-            // Si el cliente pide información de capacidad
-            if (extractedData.intencion_principal === 'capacidad_invitados') {
-                if (extractedData.tipo_servicio_mencionado === 'domicilio') {
-                    datosInyectadosAlSistema += "Capacidad a Domicilio: NO digas que es ilimitada. Simplemente dile que para eventos a domicilio la capacidad de invitados debe ser coordinada con un asesor de ventas, y ofrécele pasarlo con uno. ";
-                } else {
-                    datosInyectadosAlSistema += "Capacidad en Capilla (Sencilla o Elegante): Un límite máximo de hasta 36 personas. ";
-                }
-            }
-            
-            // Si el cliente pide precios / planes
-            if (extractedData.intencion_principal === 'consultar_precio' || extractedData.intencion_principal === 'otra') {
-                 if (extractedData.tipo_servicio_mencionado === 'domicilio') {
-                      let precioDom = extractedData.dia_mencionado === 'domingo' ? "$645" : "$545";
-                      if (extractedData.trae_licencia_propia) precioDom = extractedData.dia_mencionado === 'domingo' ? "$500" : "$400";
-                      datosInyectadosAlSistema += `Precios Boda a Domicilio: IMPORTANTE — este servicio se realiza de LUNES A SÁBADO al precio de $545. Los domingos tienen un precio especial de $645. El precio actual según el día mencionado es ${precioDom}. ${extractedData.trae_licencia_propia ? 'Con licencia propia el precio baja (ya aplicado en el monto anterior). ' : ''}Incluye: Licencia del condado, certificado, ministro, notary public y música de ambiente (1 hora). A más de 20 millas se cobran $100 extra por cada 20 millas adicionales. NUNCA digas 'cualquier día de la semana' — siempre especifica que es de Lunes a Sábado. `;
-                 } else if (extractedData.tipo_servicio_mencionado === 'sencilla' || (extractedData.dia_mencionado && ['lunes', 'martes', 'miercoles', 'jueves'].includes(extractedData.dia_mencionado))) {
-                      datosInyectadosAlSistema += "Boda Sencilla (Solo Lunes a Jueves): Precio $445 fijos. Incluye: Licencia del condado, certificado, ceremonia por ministro profesional, notary public y estacionamiento. NO incluye música de ambiente ni fotografía. ";
-                      if (extractedData.trae_licencia_propia) {
-                           datosInyectadosAlSistema += "IMPORTANTE: Aclárale al cliente que para la Boda Sencilla NO hay descuento por traer su propia licencia, el precio sigue siendo $445 fijos. ";
-                      }
-                 } else if (extractedData.tipo_servicio_mencionado === 'capilla' || (extractedData.dia_mencionado && ['viernes', 'sabado', 'domingo'].includes(extractedData.dia_mencionado))) {
-                      let precioCap = extractedData.dia_mencionado === 'domingo' ? "$595" : "$495";
-                      if (extractedData.trae_licencia_propia) precioCap = extractedData.dia_mencionado === 'domingo' ? "$350" : "$250";
-                      datosInyectadosAlSistema += `Boda en Capilla Elegante (Viernes a Domingo): El costo es ${precioCap}. Incluye: Licencia del condado, certificado, ministro profesional, notary public, estacionamiento, música de ambiente y fotografía de regalo. `;
-                 } else {
-                       datosInyectadosAlSistema += "El cliente no ha especificado qué tipo de boda le interesa todavía. NO des precios aún. Pregúntale cuál de nuestras opciones le interesa: Boda Sencilla o Simple, Boda en Capilla Elegante, o Boda a Domicilio. Los precios se dan DESPUÉS de que elijan el tipo de boda. ";
-                 }
-            }
-            
-            // Si la intención es solo saludo general
-            // Si el cliente seleccionó un tipo de servicio pero la intención no era consultar_precio,
-            // asegurar que igual reciba la info del paquete seleccionado
-            if (extractedData.tipo_servicio_mencionado !== 'ninguno' && !datosInyectadosAlSistema.includes('Precios') && !datosInyectadosAlSistema.includes('Boda Sencilla')) {
-                if (extractedData.tipo_servicio_mencionado === 'domicilio') {
-                    let precioDom = extractedData.dia_mencionado === 'domingo' ? "$645" : "$545";
-                    if (extractedData.trae_licencia_propia) precioDom = extractedData.dia_mencionado === 'domingo' ? "$500" : "$400";
-                    datosInyectadosAlSistema += `El cliente eligió Boda a Domicilio. Confirma su excelente elección y dale la info: Este servicio se realiza de LUNES A SÁBADO al precio de $545 (domingos tienen precio especial de $645). El precio para el día mencionado es ${precioDom}. Incluye: Licencia del condado, certificado, ministro, notary public y música de ambiente (1 hora de servicio). CRÍTICO: NUNCA digas que este servicio está disponible 'cualquier día de la semana' — es de Lunes a Sábado principalmente. Pregúntale si tiene alguna duda o si desea que coordine con un asesor. `;
-                } else if (extractedData.tipo_servicio_mencionado === 'sencilla') {
-                    datosInyectadosAlSistema += `El cliente eligió Boda Sencilla o Simple. Confirma su elección y dale la info: Precio $445 fijos (Solo Lunes a Jueves). Incluye: Licencia del condado, certificado, ceremonia por ministro profesional, notary public y estacionamiento. NO incluye música ni fotografía. Pregúntale si le gustaría agendar o si tiene alguna pregunta. `;
-                } else if (extractedData.tipo_servicio_mencionado === 'capilla') {
-                    let precioCap = extractedData.dia_mencionado === 'domingo' ? "$595" : "$495";
-                    if (extractedData.trae_licencia_propia) precioCap = extractedData.dia_mencionado === 'domingo' ? "$350" : "$250";
-                    datosInyectadosAlSistema += `El cliente eligió Boda en Capilla Elegante. Confirma su excelente elección y dale la info: El costo es de ${precioCap} (Viernes y Sábado $495, Domingos $595). Incluye: Licencia del condado, certificado, ministro profesional, notary public, estacionamiento, música de ambiente y fotografía de regalo. Pregúntale si le gustaría agendar o si tiene alguna pregunta. `;
-                }
-            }
 
-            if (extractedData.intencion_principal === 'saludo_general') {
-                datosInyectadosAlSistema += "Saluda amablemente y pregúntale: ¿Qué tipo de ceremonia les interesa? Tenemos Boda Sencilla, Boda en Capilla Elegante y Boda a Domicilio. Hazlo todo en una sola idea. ";
-            }
-
-            // Si el cliente pregunta por la ubicación
-            if (extractedData.intencion_principal === 'ubicacion') {
-                datosInyectadosAlSistema += " AVISO: El cliente pregunta por la ubicación. Dile nuestra dirección y que le envías la ubicación ahora mismo. ";
-            }
-
-            // --- REGLA FASE 4: RECONOCIMIENTO DE MEDIA ---
-            if (extractedData.pide_fotos) {
-                datosInyectadosAlSistema += " AVISO: El cliente quiere ver FOTOS. Dile que con gusto se las envías ahora mismo. ";
-            }
-            if (extractedData.pide_videos) {
-                datosInyectadosAlSistema += " AVISO: El cliente quiere ver VIDEOS. Dile que con gusto le envías un video del local ahora mismo. ";
-            }
+        // Si se pide ubicación: indicarle a Cynthia que envíe la dirección y el pin
+        if (extractedData.intencion_principal === 'ubicacion') {
+            systemAlert += " AVISO: El cliente pregunta la dirección. Dile nuestra dirección y que le envías el pin de ubicación.";
         }
+        // Si pide fotos o videos
+        if (extractedData.pide_fotos) systemAlert += " AVISO: El cliente quiere ver fotos. Dile que se las envías ahora.";
+        if (extractedData.pide_videos) systemAlert += " AVISO: El cliente quiere ver un video. Dile que se lo envías ahora.";
+
 
         // ==========================================
         // CAPA 3: GENERACIÓN DE RESPUESTA LINGÜÍSTICA
@@ -209,7 +162,7 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
             ? "REGLA CRÍTICA: YA TE PRESENTASTE ANTES. No vuelvas a decir 'Hola, soy Cynthia' ni a presentarte. Ve directo al grano y responde la pregunta del cliente." 
             : "REGLA CRÍTICA: Es el primer mensaje. DEBES saludarte y presentarte como Cynthia.";
 
-        const synthPrompt = `${SYNTHESIS_PROMPT}\n\n${greetingInstruction}\n\n=== INSTRUCCIÓN DEL SISTEMA DE NEGOCIO ===\n${datosInyectadosAlSistema}\n\n=== BASE DE CONOCIMIENTO ===\n${knowledgeBase}`;
+        const synthPrompt = `${SYNTHESIS_PROMPT}\n\n${greetingInstruction}${systemAlert ? `\n\n=== AVISO DEL SISTEMA ===\n${systemAlert}` : ""}\n\n=== BASE DE CONOCIMIENTO ===\n${knowledgeBase}`;
         
         const synthMessages: LLMMessage[] = [
             { role: "system", content: synthPrompt },
