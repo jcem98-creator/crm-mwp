@@ -162,7 +162,7 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
         const hasGreeted = history.some(m => m.role === "assistant") || history.filter(m => m.role === "user").length > 1;
         const greetingInstruction = hasGreeted 
             ? "REGLA CRÍTICA: YA TE PRESENTASTE ANTES. No vuelvas a decir 'Hola, soy Cynthia' ni a presentarte. Ve directo al grano y responde la pregunta del cliente." 
-            : "REGLA CRÍTICA: Es el primer mensaje. DEBES saludarte y presentarte como Cynthia.";
+            : "REGLA CRÍTICA: Es el primer mensaje. DEBES saludar exactamente con estas palabras y nada más antes o después de este saludo inicial: '¡Hola! Soy Cynthia, tu asesora virtual de My Wedding Palace. ¿Qué tipo de ceremonia te gustaría conocer Boda simple, boda en Capilla elegante o boda a domicilio?'";
 
         const synthPrompt = `${SYNTHESIS_PROMPT}\n\n${greetingInstruction}${systemAlert ? `\n\n=== AVISO DEL SISTEMA ===\n${systemAlert}` : ""}\n\n=== BASE DE CONOCIMIENTO ===\n${knowledgeBase}`;
         
