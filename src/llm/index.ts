@@ -5,7 +5,7 @@ import { config } from "../config.js";
 const openai = config.OPENAI_API_KEY ? new OpenAI({ apiKey: config.OPENAI_API_KEY }) : null;
 
 // Modelo principal (Inteligencia superior y bajo costo)
-const DEFAULT_MODEL = "gpt-4o";
+const DEFAULT_MODEL = "gpt-4o-mini";
 
 export interface LLMMessage {
     role: "system" | "user" | "assistant" | "tool";
