@@ -9,8 +9,13 @@ import { processFollowups } from "./agent/followup_engine.js";
 // Estructuras de datos para el encolamiento (Debounce)
 const messageQueues: Record<string, string[]> = {};
 const messageTimeouts: Record<string, NodeJS.Timeout> = {};
-const masterSwitch: { isOn: boolean } = { isOn: true }; // Start turned on
-const pausedUsers: Record<string, boolean> = {}; // false/true si un asesor está hablando con un cliente
+const masterSwitch = { isOn: true };
+
+// Guarda en memoria los usuarios en los que el bot debe pausarse (ej. porque un humano interviene)
+const pausedUsers: { [jid: string]: boolean } = {};
+
+// Diccionario para rate-limit de alertas al grupo cuando el cliente está en espera
+const lastAlertTimes: Record<string, number> = {}; // false/true si un asesor está hablando con un cliente
 
 async function main() {
     console.log("[App] Iniciando OpenGravity con Evolution API...");
@@ -158,8 +163,25 @@ async function main() {
         }
 
         // --- IGNORAR SI BOT ESTÁ APAGADO MAESTRO O EN EL CHAT ---
-        if (!masterSwitch.isOn || pausedUsers[remoteJid]) {
-            return; // ignoramos el mensaje del cliente
+        if (!masterSwitch.isOn) {
+            return; // ignoramos el mensaje del cliente si el bot maestro está apagado
+        }
+
+        if (pausedUsers[remoteJid]) {
+            // El bot está pausado (un humano está o debe estar atendiendo), 
+            // pero el cliente sigue escribiendo. Enviamos la alerta al grupo.
+            const cleanNum = remoteJid.split("@")[0];
+            const GRUPO_ALERTAS = "120363425164097782@g.us";
+            
+            // Limitamos alertas a 1 por minuto por chat para no spamear el grupo si mandan muchos mensajitos cortos
+            const now = Date.now();
+            const lastAlert = lastAlertTimes[remoteJid] || 0;
+
+            if (now - lastAlert > 60000) { // 60 segundos
+                sendText(GRUPO_ALERTAS, `🔔 *CLIENTE EN ESPERA* 🔔\n\nEl cliente wa.me/${cleanNum} acaba de escribir:\n_"${text}"_\n\n👉 Por favor respóndele pronto.`).catch(() => {});
+                lastAlertTimes[remoteJid] = now;
+            }
+            return; // El bot no responde directamente al cliente
         }
 
         // --- ENCOLAMIENTO DE MENSAJES DEL CLIENTE ---
