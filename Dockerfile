@@ -26,7 +26,7 @@ RUN npm ci --omit=dev && mkdir -p data
 # Copiar código compilado y archivos estáticos
 COPY --from=builder /app/dist ./dist
 COPY public/ ./public/
-COPY src/knowledge.txt ./knowledge.txt
+COPY src/knowledge.txt ./dist/knowledge.txt
 
 EXPOSE 3000
 
