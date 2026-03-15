@@ -34,7 +34,7 @@ Responde ÚNICA Y EXCLUSIVAMENTE con un JSON válido:
   "tipo_servicio_mencionado": "String: 'capilla' (chapel), 'sencilla' (simple), 'domicilio' (at home/beach/park/external location), o 'ninguno'",
   "dia_mencionado": "String: day of week in Spanish ('lunes','martes','miercoles','jueves','viernes','sabado','domingo') or 'ninguno'. Convert English days to Spanish.",
   "trae_licencia_propia": "Boolean: true si menciona que YA tiene su marriage license/licencia de matrimonio",
-  "quiere_pagar_o_agendar": "Boolean: true si habla de disponibilidad, fecha específica, reservar, pagar, agendar. También true si pregunta '¿tienen disponibilidad?', '¿puedo agendar el [fecha]?', 'availability', 'book a date'.",
+  "quiere_pagar_o_agendar": "Boolean: true SOLO si usa palabras EXPLÍCITAS como 'agendar', 'reservar', 'pagar', 'disponibilidad', 'fecha disponible', 'availability', 'book a date', 'schedule', 'quiero ir', 'quiero visitar'. IMPORTANTE: Si el cliente SOLO dice el nombre de un tipo de boda (ej: 'boda a domicilio', 'capilla', 'la sencilla', 'domicilio') SIN mencionar ninguna de esas palabras, quiere_pagar_o_agendar DEBE ser false. Elegir un paquete NO es lo mismo que querer agendar.",
   "quiere_humano": "Boolean: true si pregunta si es bot, o pide hablar con persona/human/agent",
   "cliente_nombre": "String: nombre del cliente si lo mencionó, sino 'ninguno'",
   "fecha_boda_tentativa": "String: fecha aproximada o 'ninguno'",
@@ -93,8 +93,15 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
         let datosInyectadosAlSistema = "Regla General: Estamos ubicados en 10918 Main St Ste B, El Monte, CA 91731. Somos un servicio de bodas civiles. ";
         let pasarAhumanoForzado = false;
 
-        // Reglas de Escape Rápidas (Pase a Humano)
-        if (extractedData.quiere_pagar_o_agendar || extractedData.intencion_principal === "pagar_reservar" || initialMessage.toLowerCase().includes("ir a su local") || initialMessage.toLowerCase().includes("visitar")) {
+        // Verificar si el cliente SOLO está eligiendo un paquete (sin palabras de agendar)
+        const msgLower = initialMessage.toLowerCase();
+        const hasExplicitBookingWords = msgLower.match(/(agendar|reservar|disponib|book|schedule|appointment|fecha disponible|quiero ir|visitar|ir a su local)/);
+        const isJustPickingPackage = extractedData.tipo_servicio_mencionado !== 'ninguno' 
+            && !hasExplicitBookingWords 
+            && extractedData.intencion_principal !== 'pagar_reservar';
+
+        // Reglas de Escape Rápidas (Pase a Humano) — NO se activa si solo elige paquete
+        if (!isJustPickingPackage && (extractedData.quiere_pagar_o_agendar || extractedData.intencion_principal === "pagar_reservar" || msgLower.includes("ir a su local") || msgLower.includes("visitar"))) {
             datosInyectadosAlSistema = "AVISO CRÍTICO PARA CYNTHIA: El cliente quiere agendar, reservar, o visitar el local. DI INMEDIATAMENTE QUE LO PASAS CON UN ASESOR HUMANO PARA COORDINAR LOS DETALLES O LA VISITA. MUY IMPORTANTE: NO menciones nada sobre pagos o depósitos de $200 (puede asustar al cliente), solo ofrécele pasarlo con el asesor para coordinarlo.";
             pasarAhumanoForzado = true;
         } 
@@ -102,10 +109,10 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
              datosInyectadosAlSistema = "AVISO CRÍTICO PARA CYNTHIA: El cliente pregunta si eres bot o quiere un humano. DI LA VERDAD: QUE ERES ASESORA VIRTUAL Y QUE LO PASAS CON UN HUMANO INMEDIATAMENTE.";
              pasarAhumanoForzado = true;
         }
-        else if (initialMessage.toLowerCase().includes("mismo sexo") || initialMessage.toLowerCase().includes("gay") || initialMessage.toLowerCase().includes("lesbiana") || initialMessage.toLowerCase().includes("homosexual")) {
+        else if (msgLower.includes("mismo sexo") || msgLower.includes("gay") || msgLower.includes("lesbiana") || msgLower.includes("homosexual")) {
              datosInyectadosAlSistema = "REGLA DE EMPRESA INQUEBRANTABLE (ACATA OBLIGATORIAMENTE): El cliente está preguntando si hacemos matrimonios o bodas del mismo sexo. TU RESPUESTA DEBE SER UN ROTUNDO 'NO'. Dile amablemente que NO realizamos ni hacemos matrimonios del mismo sexo. Si respondes que sí o que trabajamos con todas las parejas, fallarás críticamente.";
         }
-        else if (extractedData.intencion_principal === "tramite_legal" || initialMessage.toLowerCase().includes("ciudadania") || initialMessage.toLowerCase().includes("huellas") || initialMessage.toLowerCase().includes("green card")) {
+        else if (extractedData.intencion_principal === "tramite_legal" || msgLower.includes("ciudadania") || msgLower.includes("huellas") || msgLower.includes("green card")) {
              datosInyectadosAlSistema = "AVISO CRÍTICO PARA CYNTHIA: El cliente está preguntando por un servicio legal o migratorio (ciudadanía, huellas, etc). DI INMEDIATAMENTE QUE LO PASAS CON UN ASESOR HUMANO PARA ESOS TRÁMITES. Tienes prohibido dar asesoría legal o precios.";
              pasarAhumanoForzado = true;
         }
@@ -143,7 +150,7 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
                  if (extractedData.tipo_servicio_mencionado === 'domicilio') {
                       let precioDom = extractedData.dia_mencionado === 'domingo' ? "$645" : "$545";
                       if (extractedData.trae_licencia_propia) precioDom = extractedData.dia_mencionado === 'domingo' ? "$500" : "$400";
-                      datosInyectadosAlSistema += `Precios Boda a Domicilio: El costo es ${precioDom} (ya incluye descuento si traen licencia). A más de 20 millas se cobran $100 extra. `;
+                      datosInyectadosAlSistema += `Precios Boda a Domicilio: El costo es ${precioDom}. Incluye: Licencia del condado, certificado, ministro, notary public y música de ambiente (servicio de 1 hora). ${extractedData.trae_licencia_propia ? '(Precio ya con descuento por licencia propia). ' : ''}A más de 20 millas de nuestra oficina se cobran $100 extra por cada 20 millas adicionales. `;
                  } else if (extractedData.tipo_servicio_mencionado === 'sencilla' || (extractedData.dia_mencionado && ['lunes', 'martes', 'miercoles', 'jueves'].includes(extractedData.dia_mencionado))) {
                       datosInyectadosAlSistema += "Boda Sencilla (Solo Lunes a Jueves): Precio $445 fijos. Incluye: Licencia del condado, certificado, ceremonia por ministro profesional, notary public y estacionamiento. NO incluye música de ambiente ni fotografía. ";
                       if (extractedData.trae_licencia_propia) {
@@ -159,6 +166,22 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
             }
             
             // Si la intención es solo saludo general
+            // Si el cliente seleccionó un tipo de servicio pero la intención no era consultar_precio,
+            // asegurar que igual reciba la info del paquete seleccionado
+            if (extractedData.tipo_servicio_mencionado !== 'ninguno' && !datosInyectadosAlSistema.includes('Precios') && !datosInyectadosAlSistema.includes('Boda Sencilla')) {
+                if (extractedData.tipo_servicio_mencionado === 'domicilio') {
+                    let precioDom = extractedData.dia_mencionado === 'domingo' ? "$645" : "$545";
+                    if (extractedData.trae_licencia_propia) precioDom = extractedData.dia_mencionado === 'domingo' ? "$500" : "$400";
+                    datosInyectadosAlSistema += `El cliente eligió Boda a Domicilio. Confirma su excelente elección y dale la info: El costo es de ${precioDom} (Lunes a Sábado $545, Domingos $645). Incluye: Licencia del condado, certificado, ministro, notary public y música de ambiente. Para coordinar todos los detalles y la visita, ofrécele pasarlo con un asesor humano que le ayudará. `;
+                } else if (extractedData.tipo_servicio_mencionado === 'sencilla') {
+                    datosInyectadosAlSistema += `El cliente eligió Boda Sencilla o Simple. Confirma su elección y dale la info: Precio $445 fijos (Solo Lunes a Jueves). Incluye: Licencia del condado, certificado, ceremonia por ministro profesional, notary public y estacionamiento. NO incluye música ni fotografía. Pregúntale si le gustaría agendar o si tiene alguna pregunta. `;
+                } else if (extractedData.tipo_servicio_mencionado === 'capilla') {
+                    let precioCap = extractedData.dia_mencionado === 'domingo' ? "$595" : "$495";
+                    if (extractedData.trae_licencia_propia) precioCap = extractedData.dia_mencionado === 'domingo' ? "$350" : "$250";
+                    datosInyectadosAlSistema += `El cliente eligió Boda en Capilla Elegante. Confirma su excelente elección y dale la info: El costo es de ${precioCap} (Viernes y Sábado $495, Domingos $595). Incluye: Licencia del condado, certificado, ministro profesional, notary public, estacionamiento, música de ambiente y fotografía de regalo. Pregúntale si le gustaría agendar o si tiene alguna pregunta. `;
+                }
+            }
+
             if (extractedData.intencion_principal === 'saludo_general') {
                 datosInyectadosAlSistema += "Saluda amablemente y pregúntale: ¿Qué tipo de ceremonia les interesa? Tenemos Boda Sencilla, Boda en Capilla Elegante y Boda a Domicilio. Hazlo todo en una sola idea. ";
             }
