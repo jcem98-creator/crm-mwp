@@ -110,18 +110,17 @@ CASO ESPECIAL — FECHA ESPECÍFICA:
 Incluye estos tags al FINAL de tu respuesta cuando aplique. Son invisibles para el cliente.
 El sistema los procesa y envía los archivos automáticamente.
 
-[SEND_PHOTOS]          → SOLO cuando el cliente pide EXPLICITAMENTE ver fotos o la capilla visualmente:
-                         "manden fotos", "quiero ver la capilla", "¿cómo es la capilla?", "foto del lugar".
-                         NO lo uses cuando pregunten qué incluye, precios o disponibilidad.
-[SEND_PHOTO_DOMICILIO] → cuando pregunten cómo se ve una boda a domicilio o pidan ver ese servicio.
-[SEND_VIDEO]           → cuando el cliente pregunta si tienen video, pide verlo o pide un recorrido.
-                         ENVÍALO DIRECTAMENTE. No preguntes si lo quiere, ya lo pidió.
-                         Di: "Aquí te mando un video de nuestras instalaciones 🎥" y usa el tag.
+[SEND_PHOTOS]          → SOLO cuando pido ver fotos: "manden fotos", "quiero ver la capilla", "foto del lugar".
+                         NO usar cuando pregunten qué incluye, precios o disponibilidad.
+[SEND_PHOTO_DOMICILIO] → SOLO cuando piden ver cómo se ve una boda a domicilio.
+[SEND_VIDEO]           → SOLO cuando el cliente EXPLICITAMENTE pide un video o recorrido.
+                         NUNCA lo uses si preguntaron fotos, precios o qué incluye.
+                         Si los piden: "Aquí te mando el video de nuestras instalaciones 🎥"
 [SEND_LOCATION]        → cuando pregunten dirección, cómo llegar, mapa, pin, Google Maps o Waze.
                          SIEMPRE junto con la dirección, sin preguntar permiso.
                          Di: "Nuestra dirección es 10918 Main St Ste B, El Monte CA 91731. Te mando el pin 📍"
 
-REGLA IMPORTANTE: Siempre incluye el tag correspondiente cuando aplique. Es obligatorio.
+REGLA: Solo usa el tag que corresponde exactamente a lo que pidieron.
 
 ================================================================
                      FORMATO DE RESPUESTA
@@ -169,27 +168,24 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
         // Capa 2: tag explícito de la IA
         // Capa 3: keywords en la respuesta de la IA (fallback)
 
-        // FOTOS — Solo cuando hay intención visual explícita del usuario
-        // "¿tienen fotos?", "foto del lugar", "quiero ver", "show me" → fotos
-        // "¿qué incluye?", "¿cuánto cuesta?" → NO fotos aunque mencionen "capilla"
+        // FOTOS — Diferenciar: genérico, capilla-específico, domicilio-específico
         const userAsksDomicilio   = /(domicilio|at home|en casa)/i.test(userNorm);
-        const userWantsToSee      = /(foto|photo|image|picture|imagenes|ver|muest|show|how does it look|que tal se ve)/i.test(userNorm);
-        const userAsksFotoGeneric = userWantsToSee && !userAsksDomicilio;
+        const userAsksCapilla     = /(capilla|chapel)/i.test(userNorm);
+        const userWantsToSee      = /(foto|photo|image|picture|imagenes|ver|show)/i.test(userNorm);
+        // Genérico = quiere ver PERO no especificó capilla ni domicilio
+        const userAsksTrueGeneric = userWantsToSee && !userAsksDomicilio && !userAsksCapilla;
 
-        // Fotos de capilla: intención visual genérica O AI tag
-        const sendPhotos = userAsksFotoGeneric
-            || responseContent.includes("[SEND_PHOTOS]")
-            || /(te mando unas fotos|here are some photos|sending photos)/i.test(responseNorm);
+        // Fotos capilla: capilla específico O genérico (sin especificar) O AI tag
+        const sendPhotos = (userWantsToSee && userAsksCapilla) || userAsksTrueGeneric
+            || responseContent.includes("[SEND_PHOTOS]");
 
-        // Foto de domicilio: piden domicilio + intención visual O foto genérica O AI tag
-        const sendPhotoDomicilio = (userWantsToSee && userAsksDomicilio) || userAsksFotoGeneric
+        // Fotos domicilio: domicilio específico O genérico (sin especificar) O AI tag
+        const sendPhotoDomicilio = (userWantsToSee && userAsksDomicilio) || userAsksTrueGeneric
             || responseContent.includes("[SEND_PHOTO_DOMICILIO]");
 
-        // VIDEO: usuario pregunta por video/recorrido/tour
-        const userWantsVideo = /(video|recorrido|tour|instalaciones)/i.test(userNorm);
-        const sendVideo = userWantsVideo
-            || responseContent.includes("[SEND_VIDEO]")
-            || /(te lo mando|mando el video|te mando el video|sending the video|here is the video)/i.test(responseNorm);
+        // VIDEO: SOLO desde mensaje del usuario o AI tag — sin fallback de respuesta (causa falsos positivos)
+        const userWantsVideo = /(video|recorrido|tour)/i.test(userNorm);
+        const sendVideo = userWantsVideo || responseContent.includes("[SEND_VIDEO]");
 
         // PIN de ubicación: usuario pregunta por dirección/mapa/ubicación
         const userWantsLocation = /(direccion|address|ubicacion|donde|mapa|map|pin|google maps|waze|como llegar|how to get)/i.test(userNorm);
