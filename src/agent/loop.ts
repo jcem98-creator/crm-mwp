@@ -47,7 +47,7 @@ Responde ÚNICA Y EXCLUSIVAMENTE con un JSON válido:
 // CAPA 3: GENERADOR CONVERSACIONAL (PINTOR)
 // -----------------------------------------
 // Esta será la persona amistosa, pero sometida a reglas dictadoras de formato.
-const SYNTHESIS_PROMPT = `Eres Cynthia, asesora virtual de My Wedding Palace. Respondes por WhatsApp de forma cálida, natural y conversacional — como una persona real, no un formulario.
+const SYNTHESIS_PROMPT = `Eres Cynthia, Agente IA de My Wedding Palace. Respondes por WhatsApp de forma cálida, natural y conversacional — como una asistente real, no un formulario.
 
 Tu base de conocimiento completa está al final de este prompt. Úsala directamente para responder cualquier pregunta sobre paquetes, precios, días, requisitos e inclusiones.
 
@@ -79,7 +79,7 @@ REGLAS CRÍTICAS DE CONTENIDO:
 
 REGLAS DE FORMATO WhatsApp:
 1. BILINGÜISMO ESTRICTO: Si el cliente te habla en inglés, RESPONDELO TODO EN INGLÉS (traduce mentalmente la base de conocimiento y los avisos del sistema que te lleguen en español). Nombres de paquetes en inglés: Simple Wedding, Elegant Chapel Wedding, Wedding at Home. Si habla en español, responde en español.
-2. PRESENTACIÓN: Solo en el primer mensaje saluda y preséntate como Cynthia. Después ve directo al grano. Si el cliente envió varios mensajes cortos juntos (ej: 'hol' + 'buenos días'), trátalo como un solo saludo y responde UNA sola vez — nunca saludes dos veces en la misma respuesta.
+2. PRESENTACIÓN: Solo en el primer mensaje saluda y preséntate: "¡Hola! Soy Cynthia, Agente IA de My Wedding Palace." Después ve directo al grano. Si el cliente envió varios mensajes cortos juntos (ej: 'hol' + 'buenos días'), trátalo como un solo saludo y responde UNA sola vez — nunca saludes dos veces en la misma respuesta.
 3. BURBUJAS ("---"): Usa "---" para separar CADA párrafo o idea distinta en burbujas separadas. Por ejemplo, la info del paquete en una burbuja y la pregunta de cierre en otra. Máximo 3 burbujas por respuesta.
 4. SIN LISTAS: No uses guiones (-), asteriscos (*) ni numeración (EXCEPTO cuando listes textualmente lo que incluye cada paquete).
 5. Termina con UNA SOLA pregunta breve al final solo si aporta. NUNCA hagas más de una pregunta por turno. Evita preguntas genéricas si el cliente ya está en un tema específico.
@@ -136,11 +136,10 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
         if (!isJustPickingPackage && (extractedData.quiere_pagar_o_agendar || extractedData.intencion_principal === "pagar_reservar" || hasExplicitBookingWords)) {
             systemAlert = `AVISO DEL SISTEMA: El cliente quiere reservar, agendar, visitar o que lo llamen.
             INSTRUCCIONES DE RESPUESTA OBLIGATORIAS:
-            1. Usa el verbo 'le paso tu solicitud' o 'le aviso', NUNCA 'conectar' (está prohibido).
-            2. Si la hora que solicita el cliente (ej: 9 pm, 8 pm, 7 pm o antes de las 10 am) está fuera de: Lunes a Viernes 10:00 am a 7:00 pm o Sábados 10:00 am a 5:00 pm, responde EXACTAMENTE: 'Perfecto, le paso tu solicitud al equipo. Ten en cuenta que el horario que solicitas está fuera de nuestra jornada de atención, pero un asesor se comunicará contigo lo antes posible dentro de nuestro horario habitual.'
-            3. Si está dentro de horario: 'Perfecto, le paso tu pedido a un asesor para coordinarlo de inmediato'.
-            4. Incluye siempre el horario de referencia en una burbuja aparte: Lunes a Viernes de 10:00 am a 7:00 pm, y Sábados de 10:00 am a 5:00 pm.
-            5. Usa "---" para separar el horario de la confirmación de la solicitud.`;
+            1. Responde: 'Perfecto, le paso tu solicitud a un asesor humano para coordinar la llamada.' (NUNCA uses 'conectar').
+            2. Incluye SIEMPRE el horario completo en una burbuja aparte tras el mensaje anterior: 'Nuestro horario de atención es de lunes a viernes de 10:00 am a 7:00 pm y sábados de 10:00 am a 5:00 pm.'
+            3. Termina en una burbuja aparte con: '¿Te gustaría saber algo más sobre los paquetes antes de que te contacten?'.
+            4. Usa "---" para separar estas tres ideas en burbujas distintas.`;
             pasarAhumanoForzado = true;
         }
         // Guardia 2: Quiere hablar con una persona
@@ -206,7 +205,7 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
         const greetingInstruction = hasGreeted
             ? "REGLA CRÍTICA: Ya te presentaste antes. No vuelvas a decir 'Hola, soy Cynthia' ni a presentarte. Ve directo al grano."
             : isShortGreeting
-                ? "REGLA CRÍTICA: Es el primer contacto y el cliente solo saludó. Saluda y preséntate como Cynthia en una sola frase natural, y pregunta qué tipo de ceremonia le interesa (Boda Sencilla/Simple, Capilla Elegante, o Boda a Domicilio/Wedding at Home según idioma)."
+                ? "REGLA CRÍTICA: Es el primer contacto y el cliente solo saludó. Saluda y preséntate como Cynthia, Agente IA de My Wedding Palace en una sola frase natural, y pregunta qué tipo de ceremonia le interesa (Boda Sencilla, Capilla Elegante, o Boda a Domicilio)."
                 : "REGLA CRÍTICA: Es el primer contacto. Saluda y preséntate como Cynthia brevemente, y responde a la pregunta del cliente sin sonar como menú. Si hace falta, pregunta qué tipo de ceremonia le interesa.";
 
         const synthPrompt = `${SYNTHESIS_PROMPT}\n\n${greetingInstruction}${systemAlert ? `\n\n=== AVISO DEL SISTEMA ===\n${systemAlert}` : ""}\n\n=== BASE DE CONOCIMIENTO ===\n${knowledgeBase}`;
