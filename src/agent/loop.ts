@@ -132,23 +132,26 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
         // Heurística: playa/parque/montaña/etc. => tratar como Boda a Domicilio (para evitar respuestas negativas)
         const isExternalLocation = /(playa|beach|parque|park|monta[nñ]a|mountain|jard[ií]n|garden|rancho|sal[oó]n|salon|lugar|afuera|outdoor)/.test(msgLower);
 
+        // --- LÓGICA DE PASE A HUMANO (UNIFICADA) ---
+        const SOLICITUD_HUMANO_FIXED = `AVISO CRÍTICO (ORDEN ABSOLUTA): El cliente solicita hablar con un asesor, agendar, llamar o un trámite legal.
+        DEBES RESPONDER ÚNICAMENTE CON ESTAS 3 BURBUJAS, SEPARADAS POR "---". 
+        PROHIBIDO: No menciones la hora que pidió el cliente. No uses el verbo 'conectar'. No añadas nada más.
+        
+        TEXTO EXACTO A ENVIAR:
+        Perfecto, le paso tu solicitud a un asesor humano para coordinar la llamada.
+        ---
+        Nuestro horario de atención es de lunes a viernes de 10:00 am a 7:00 pm y sábados de 10:00 am a 5:00 pm.
+        ---
+        ¿Te gustaría saber algo más sobre los paquetes antes de que te contacten?`;
+
         // Guardia 1: Quiere agendar / reservar / visitar / llamar
         if (!isJustPickingPackage && (extractedData.quiere_pagar_o_agendar || extractedData.intencion_principal === "pagar_reservar" || hasExplicitBookingWords)) {
-            systemAlert = `AVISO CRÍTICO (ORDEN ABSOLUTA): El cliente quiere una llamada o cita.
-            DEBES RESPONDER ÚNICAMENTE CON ESTAS 3 BURBUJAS, SEPARADAS POR "---". 
-            PROHIBIDO: No menciones la hora que pidió el cliente. No añadas nada más.
-            
-            TEXTO EXACTO A ENVIAR:
-            Perfecto, le paso tu solicitud a un asesor humano para coordinar la llamada.
-            ---
-            Nuestro horario de atención es de lunes a viernes de 10:00 am a 7:00 pm y sábados de 10:00 am a 5:00 pm.
-            ---
-            ¿Te gustaría saber algo más sobre los paquetes antes de que te contacten?`;
+            systemAlert = SOLICITUD_HUMANO_FIXED;
             pasarAhumanoForzado = true;
         }
         // Guardia 2: Quiere hablar con una persona
         else if (extractedData.quiere_humano || extractedData.intencion_principal === "hablar_con_humano") {
-            systemAlert = "AVISO DEL SISTEMA: El cliente quiere hablar con una persona. Sé transparente: eres asesora virtual. Responde en positivo: con gusto lo conectas con un asesor humano de inmediato. No uses frases negativas.";
+            systemAlert = SOLICITUD_HUMANO_FIXED;
             pasarAhumanoForzado = true;
         }
         // Guardia 3: Matrimonio mismo sexo
@@ -157,7 +160,7 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
         }
         // Guardia 4: Trámite legal / migratorio
         else if (extractedData.intencion_principal === "tramite_legal" || msgLower.match(/(ciudadan[ií]a|huellas|green card|permiso de trabajo|petici[oó]n familiar)/)) {
-            systemAlert = "AVISO DEL SISTEMA: El cliente pregunta por trámites legales o migratorios. Responde en positivo: con gusto lo conectas con un asesor especializado de inmediato. No des precios ni detalles legales.";
+            systemAlert = SOLICITUD_HUMANO_FIXED;
             pasarAhumanoForzado = true;
         }
         // Ubicación externa (playa/parque/etc.) -> Boda a Domicilio (si no está pasando a humano)
