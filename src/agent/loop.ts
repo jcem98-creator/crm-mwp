@@ -173,22 +173,24 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
         const responseNorm = responseContent.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         const userNorm     = initialMessage.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-        // Pase a humano — detectar desde mensaje del usuario (fiable) O tag de la IA
-        const visitKeywords   = /(puedo ir|quiero ir|puedo caer|visitar|quiero conocer|can i visit|i want to visit|can i go|want to go)/i;
-        const callKeywords    = /(me pueden llamar|pueden llamarme|llamarme|marcame|llavenme|echenme|fonazo|call me|can you call)/i;
-        const reserveKeywords = /(como reservo|como aparto|quiero reservar|quiero apartar|hacer la reserva|how do i book|how do i reserve|want to book|want to reserve)/i;
-        const legalKeywords   = /(green card|ciudadania|peticion familiar|huellas|live scan|citizenship)/i;
-        const contactKeywords = /(contactame|contactenme|con un asesor|quiero hablar|quiero que me contacten|me contactan|pasame|pásame|hablar con alguien|contact me|speak with|talk to someone|talk to an advisor)/i;
+        // PASE A HUMANO — Detección en 3 capas:
+        // Capa 1: mensaje del usuario (keywords amplio ES+EN — una sola línea, JS no soporta flag x)
+        const handoffUserKeywords = /(puedo\s*ir|quiero\s*ir|puedo\s*caer|visitar|quiero\s*conocer|me\s*pueden\s*llamar|pueden\s*llamarme|llamarme|marcame|llavenme|echenme|fonazo|denme\s*un|quiero\s*reservar|quiero\s*apartar|como\s*reservo|como\s*aparto|hacer\s*la\s*reserva|separar\s*la\s*fecha|apartar\s*la\s*fecha|dar\s*el\s*adelanto|dar\s*el\s*deposito|dar\s*enganche|contactame|contactenme|con\s*un\s*asesor|quiero\s*hablar|necesito\s*hablar|quiero\s*que\s*me\s*llamen|quiero\s*que\s*me\s*contacten|me\s*contactan|pasame|comuniquense|comunicarse\s*conmigo|ponerse\s*en\s*contacto|hablar\s*con\s*alguien|hablar\s*con\s*un\s*asesor|green\s*card|ciudadania|peticion\s*familiar|huellas|live\s*scan|call\s*me|contact\s*me|reach\s*out|speak\s*with|talk\s*to\s*someone|talk\s*to\s*an\s*advisor|can\s*i\s*visit|i\s*want\s*to\s*visit|can\s*i\s*go|how\s*do\s*i\s*book|how\s*do\s*i\s*reserve|want\s*to\s*book|want\s*to\s*reserve|i\s*want\s*to\s*book|i\s*want\s*to\s*reserve|i\s*want\s*to\s*come|citizenship|immigration)/i;
+        const userTriggersHandoff = handoffUserKeywords.test(userNorm);
 
-        const userTriggersHandoff = visitKeywords.test(userNorm) || callKeywords.test(userNorm)
-            || reserveKeywords.test(userNorm) || legalKeywords.test(userNorm) || contactKeywords.test(userNorm);
-        const aiTriggeredHandoff  = responseContent.includes("[PASE_HUMANO]");
-        const needsHandoff        = userTriggersHandoff || aiTriggeredHandoff;
+        // Capa 2: tag explícito de la IA
+        const aiTriggeredHandoff = responseContent.includes("[PASE_HUMANO]");
+
+        // Capa 3: la IA escribió el texto de pase aunque olvidó el tag
+        // (el prompt le dice exactamente qué escribir → detectamos eso)
+        const aiResponseHandoff = /(asesor te contactar|advisor will reach out|asesor te contact|un asesor se comunicar)/i.test(responseNorm);
+
+        const needsHandoff = userTriggersHandoff || aiTriggeredHandoff || aiResponseHandoff;
 
         // Si el usuario disparó el handoff pero la IA no usó el mensaje estándar,
         // reemplazar la respuesta con el texto correcto
         const isSpanish = !/(hello|hi |what |how |do you|can you|i want|i need|simple wedding|elegant|wedding at home|package|price)/i.test(initialMessage);
-        if (userTriggersHandoff && !aiTriggeredHandoff) {
+        if (userTriggersHandoff && !aiTriggeredHandoff && !aiResponseHandoff) {
             responseContent = isSpanish
                 ? "¡Perfecto! Un asesor te contactará por WhatsApp o llamada lo antes posible.\nNuestro horario de atención es lunes a viernes de 10 am a 7 pm y sábados de 10 am a 5 pm. 😊"
                 : "Perfect! An advisor will reach out to you via WhatsApp or call as soon as possible.\nOur office hours are Monday–Friday 10 am–7 pm and Saturday 10 am–5 pm. 😊";
