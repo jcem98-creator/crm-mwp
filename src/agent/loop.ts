@@ -112,7 +112,7 @@ El sistema los procesa y envía los archivos automáticamente.
 
 [SEND_PHOTOS]          → SOLO cuando pido ver fotos: "manden fotos", "quiero ver la capilla", "foto del lugar".
                          NO usar cuando pregunten qué incluye, precios o disponibilidad.
-[SEND_PHOTO_DOMICILIO] → SOLO cuando piden ver cómo se ve una boda a domicilio.
+
 [SEND_VIDEO]           → SOLO cuando el cliente EXPLICITAMENTE pide un video o recorrido.
                          NUNCA lo uses si preguntaron fotos, precios o qué incluye.
                          Si los piden: "Aquí te mando el video de nuestras instalaciones 🎥"
@@ -168,20 +168,9 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
         // Capa 2: tag explícito de la IA
         // Capa 3: keywords en la respuesta de la IA (fallback)
 
-        // FOTOS — Diferenciar: genérico, capilla-específico, domicilio-específico
-        const userAsksDomicilio   = /(domicilio|at home|en casa)/i.test(userNorm);
-        const userAsksCapilla     = /(capilla|chapel)/i.test(userNorm);
-        const userWantsToSee      = /(foto|photo|image|picture|imagenes|ver|show)/i.test(userNorm);
-        // Genérico = quiere ver PERO no especificó capilla ni domicilio
-        const userAsksTrueGeneric = userWantsToSee && !userAsksDomicilio && !userAsksCapilla;
-
-        // Fotos capilla: capilla específico O genérico (sin especificar) O AI tag
-        const sendPhotos = (userWantsToSee && userAsksCapilla) || userAsksTrueGeneric
-            || responseContent.includes("[SEND_PHOTOS]");
-
-        // Fotos domicilio: domicilio específico O genérico (sin especificar) O AI tag
-        const sendPhotoDomicilio = (userWantsToSee && userAsksDomicilio) || userAsksTrueGeneric
-            || responseContent.includes("[SEND_PHOTO_DOMICILIO]");
+        // FOTOS capilla: cuando piden ver fotos explícitamente
+        const userWantsToSee = /(foto|photo|image|picture|imagenes|ver|show)/i.test(userNorm);
+        const sendPhotos = userWantsToSee || responseContent.includes("[SEND_PHOTOS]");
 
         // VIDEO: SOLO desde mensaje del usuario o AI tag — sin fallback de respuesta (causa falsos positivos)
         const userWantsVideo = /(video|recorrido|tour)/i.test(userNorm);
@@ -197,7 +186,7 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
         responseContent = responseContent
             .replace(/\[PASE_HUMANO\]/g, "")
             .replace(/\[SEND_PHOTOS\]/g, "")
-            .replace(/\[SEND_PHOTO_DOMICILIO\]/g, "")
+
             .replace(/\[SEND_VIDEO\]/g, "")
             .replace(/\[SEND_LOCATION\]/g, "")
             .trim();
@@ -228,12 +217,7 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
                 await sendMedia(chatId, `${baseUrl}/capilla2.jpg`, "image", "✨ Otro ángulo de nuestra capilla");
             }
 
-            if (sendPhotoDomicilio) {
-                console.log(`[Agent] 📸 Enviando foto de boda a domicilio para ${chatId}`);
-                await sendPresence(chatId, "composing");
-                await new Promise(r => setTimeout(r, 1000));
-                await sendMedia(chatId, `${baseUrl}/domicilio1.jpg`, "image", "🏡 Así se ve una boda a domicilio");
-            }
+
 
             if (sendVideo) {
                 console.log(`[Agent] 🎥 Enviando video de recorrido para ${chatId}`);
