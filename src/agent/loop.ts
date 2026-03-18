@@ -134,16 +134,16 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
 
         // Guardia 1: Quiere agendar / reservar / visitar / llamar
         if (!isJustPickingPackage && (extractedData.quiere_pagar_o_agendar || extractedData.intencion_principal === "pagar_reservar" || hasExplicitBookingWords)) {
-            systemAlert = `AVISO DEL SISTEMA (MÁXIMA PRIORIDAD): El cliente quiere reservar, agendar o llamar.
-            DEBES RESPONDER PALABRA POR PALABRA LO SIGUIENTE, DIVIDIDO POR "---":
+            systemAlert = `AVISO CRÍTICO (ORDEN ABSOLUTA): El cliente quiere una llamada o cita.
+            DEBES RESPONDER ÚNICAMENTE CON ESTAS 3 BURBUJAS, SEPARADAS POR "---". 
+            PROHIBIDO: No menciones la hora que pidió el cliente. No añadas nada más.
             
+            TEXTO EXACTO A ENVIAR:
             Perfecto, le paso tu solicitud a un asesor humano para coordinar la llamada.
             ---
             Nuestro horario de atención es de lunes a viernes de 10:00 am a 7:00 pm y sábados de 10:00 am a 5:00 pm.
             ---
-            ¿Te gustaría saber algo más sobre los paquetes antes de que te contacten?
-            
-            PROHIBIDO: No añadas "para que te llamen a las X", no cambies ni una coma del texto anterior.`;
+            ¿Te gustaría saber algo más sobre los paquetes antes de que te contacten?`;
             pasarAhumanoForzado = true;
         }
         // Guardia 2: Quiere hablar con una persona
@@ -209,8 +209,8 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
         const greetingInstruction = hasGreeted
             ? "REGLA CRÍTICA: Ya te presentaste antes. No vuelvas a decir 'Hola, soy Cynthia' ni a presentarte. Ve directo al grano."
             : isShortGreeting
-                ? "REGLA CRÍTICA: Es el primer contacto. Responde exactamente esto: '¡Hola! Soy Cynthia, Agente IA de My Wedding Palace. --- ¿Qué tipo de ceremonia te interesa: Boda Sencilla, Capilla Elegante o Boda a Domicilio?'"
-                : "REGLA CRÍTICA: Es el primer contacto. Saluda y preséntate como Cynthia brevemente, y responde a la pregunta del cliente sin sonar como menú. Si hace falta, pregunta qué tipo de ceremonia le interesa.";
+                ? "REGLA DE ORO DE PRESENTACIÓN: Responde EXACTAMENTE esto (con las burbujas separadas por ---): '¡Hola! Soy Cynthia, Agente IA de My Wedding Palace. --- ¿Qué tipo de ceremonia te interesa: Boda Sencilla, Capilla Elegante o Boda a Domicilio?'"
+                : "REGLA DE ORO: Responde saludando como Cynthia, Agente IA de My Wedding Palace. Luego responde a su pregunta. SIEMPRE pregunta al final si le interesa la Boda Sencilla, Capilla Elegante o Boda a Domicilio.";
 
         const synthPrompt = `${SYNTHESIS_PROMPT}\n\n${greetingInstruction}${systemAlert ? `\n\n=== AVISO DEL SISTEMA ===\n${systemAlert}` : ""}\n\n=== BASE DE CONOCIMIENTO ===\n${knowledgeBase}`;
         
