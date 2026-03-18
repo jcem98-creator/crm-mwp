@@ -133,7 +133,7 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
 
         const msgLower = initialMessage.toLowerCase();
         const msgNormalized = msgLower.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); // "llámame" -> "llamame"
-        const hasExplicitBookingWords = msgNormalized.match(/(agendar|reservar|disponib|book|schedule|appointment|fecha|visitar|ir a su local|llamame|llamenme|cita|reunion)/);
+        const hasExplicitBookingWords = msgNormalized.match(/(agendar|reservar|visitar|ir a su local|llamame|llamenme|cita|reunion|comunicarme|hablar con alguien|hablar con un asesor)/);
         
         // Verificamos si ya hubo mensajes del asistente para no repetir saludo
         const userMsgCount = history.filter(m => m.role === "user").length;
