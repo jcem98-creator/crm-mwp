@@ -110,8 +110,9 @@ CASO ESPECIAL — FECHA ESPECÍFICA:
 Incluye estos tags al FINAL de tu respuesta cuando aplique. Son invisibles para el cliente.
 El sistema los procesa y envía los archivos automáticamente.
 
-[SEND_PHOTOS]          → cuando pregunten cómo es la capilla, pidan fotos o quieran ver el lugar.
-                         Solo manda fotos. NO incluyas lista de items del paquete en ese mismo mensaje.
+[SEND_PHOTOS]          → SOLO cuando el cliente pide EXPLICITAMENTE ver fotos o la capilla visualmente:
+                         "manden fotos", "quiero ver la capilla", "¿cómo es la capilla?", "foto del lugar".
+                         NO lo uses cuando pregunten qué incluye, precios o disponibilidad.
 [SEND_PHOTO_DOMICILIO] → cuando pregunten cómo se ve una boda a domicilio o pidan ver ese servicio.
 [SEND_VIDEO]           → cuando el cliente pregunta si tienen video, pide verlo o pide un recorrido.
                          ENVÍALO DIRECTAMENTE. No preguntes si lo quiere, ya lo pidió.
@@ -168,21 +169,20 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
         // Capa 2: tag explícito de la IA
         // Capa 3: keywords en la respuesta de la IA (fallback)
 
-        // FOTOS — Diferenciar genérico vs específico:
-        // "tienen fotos?" (genérico)  → manda las 3 (capilla + domicilio)
-        // "boda a domicilio / foto domicilio" (específico) → solo domicilio
-        // "capilla / instalaciones / cómo es" (específico) → solo capilla
+        // FOTOS — Solo cuando hay intención visual explícita del usuario
+        // "¿tienen fotos?", "foto del lugar", "quiero ver", "show me" → fotos
+        // "¿qué incluye?", "¿cuánto cuesta?" → NO fotos aunque mencionen "capilla"
         const userAsksDomicilio   = /(domicilio|at home|en casa)/i.test(userNorm);
-        const userAsksCapillaOnly = /(capilla|chapel|instalacion|como es|how is)/i.test(userNorm) && !userAsksDomicilio;
-        const userAsksFotoGeneric = /(foto|photo|image|picture|imagenes)/i.test(userNorm) && !userAsksDomicilio && !userAsksCapillaOnly;
+        const userWantsToSee      = /(foto|photo|image|picture|imagenes|ver|muest|show|how does it look|que tal se ve)/i.test(userNorm);
+        const userAsksFotoGeneric = userWantsToSee && !userAsksDomicilio;
 
-        // Fotos de capilla: específico de capilla O fotos genéricas O AI tag
-        const sendPhotos = userAsksCapillaOnly || userAsksFotoGeneric
+        // Fotos de capilla: intención visual genérica O AI tag
+        const sendPhotos = userAsksFotoGeneric
             || responseContent.includes("[SEND_PHOTOS]")
             || /(te mando unas fotos|here are some photos|sending photos)/i.test(responseNorm);
 
-        // Foto de domicilio: específico de domicilio O fotos genéricas O AI tag
-        const sendPhotoDomicilio = userAsksDomicilio || userAsksFotoGeneric
+        // Foto de domicilio: piden domicilio + intención visual O foto genérica O AI tag
+        const sendPhotoDomicilio = (userWantsToSee && userAsksDomicilio) || userAsksFotoGeneric
             || responseContent.includes("[SEND_PHOTO_DOMICILIO]");
 
         // VIDEO: usuario pregunta por video/recorrido/tour
