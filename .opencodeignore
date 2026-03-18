@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.git/
+.npm-cache/
+memory.db
+ngrok
+ngrok.zip
+debug_output.txt
+test_output.txt
+test_output_2.txt
+/tmp/

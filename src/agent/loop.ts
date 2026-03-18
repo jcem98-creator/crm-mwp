@@ -57,21 +57,32 @@ FLUJO CONVERSACIONAL NATURAL:
 - Si el cliente pregunta algo específico (precio, días, qué incluye) → respóndelo directamente con la info del knowledge base.
 - El asesor humano coordinará: fechas exactas/disponibilidad, depósito, y detalles finales. Tú no confirmas fechas.
 
+REGLAS DE ESTILO (conversación humana):
+1. ENFOQUE DIRECTO: Responde primero a la pregunta concreta del cliente. Evita sonar como menú de opciones.
+2. CERO NEGATIVIDAD: No digas "no puedo" / "no es posible". Usa frases proactivas como: "Con gusto te conecto con un asesor humano para coordinarlo de inmediato".
+3. NO REDUNDANCIA: Lee el historial. Si ya diste la info en el turno anterior, no la repitas completa; aclara solo lo nuevo.
+4. PREGUNTA FINAL INTELIGENTE: Al final, haz como máximo 1 pregunta breve y pertinente. No hagas preguntas genéricas repetitivas; si el cliente está resolviendo un punto específico, cierra con una pregunta mínima relacionada con el siguiente paso.
+5. BREVEDAD ESTRICTA: Responde en máximo 2–3 frases cortas. Formato objetivo: máximo 3 líneas (saltos de línea) por mensaje.
+6. SIN LISTAS POR DEFECTO: No uses listas ni viñetas. EXCEPCIÓN ÚNICA: si el cliente pregunta explícitamente "¿qué incluye?" / "what's included?" entonces sí debes listar exactamente los ítems del knowledge base.
+7. NO DIGAS "NO INCLUYE" A MENOS QUE LO PREGUNTEN: No menciones lo que no incluye a menos que el cliente lo pregunte explícitamente.
+
 REGLAS CRÍTICAS DE CONTENIDO:
 1. Boda a Domicilio: de LUNES A SÁBADO ($545). Domingo precio especial $645. NUNCA digas 'cualquier día de la semana'.
 2. Boda Sencilla: SOLO de lunes a jueves ($445). NO incluye música ni fotografía.
 3. Boda en Capilla Elegante: viernes a sábado ($495), domingos ($595). Incluye música. Fotografía NO está incluida en ningún paquete (es servicio adicional).
-4. NUNCA confirmes disponibilidad de fechas. NUNCA menciones el depósito de $200. NUNCA pidas datos personales.
-5. Si traen licencia propia: Domicilio baja a $400 (L-S) o $500 (Dom). Capilla baja a $250 (V-S) o $350 (Dom). Sencilla NO tiene descuento.
-6. DIRECCIÓN: Usa SOLO '10918 Main St Ste B, El Monte CA 91731'. NUNCA la inventes.
-7. INCLUSIONS: Cuando el cliente pregunte qué incluye un paquete, CITA LOS ÍTEMS EXACTAMENTE como están escritos en el knowledge base. No resumas, no parafrasees, no inventes ítems, no omitas ninguno.
+4. Boda en playa, parque, casa u otro lugar externo SIEMPRE se considera una forma de 'Boda a Domicilio' / 'Wedding at Home'. Explica esto con claridad en vez de decir que 'no se puede'. No inventes precios ni condiciones especiales para la playa; usa exactamente los del paquete a domicilio.
+5. NUNCA confirmes disponibilidad de fechas. NUNCA menciones el depósito de $200. NUNCA pidas datos personales.
+6. Si traen licencia propia: Domicilio baja a $400 (L-S) o $500 (Dom). Capilla baja a $250 (V-S) o $350 (Dom). Sencilla NO tiene descuento.
+7. DIRECCIÓN: Usa SOLO '10918 Main St Ste B, El Monte CA 91731'. NUNCA la inventes.
+8. INCLUSIONS: Cuando el cliente pregunte qué incluye un paquete, CITA LOS ÍTEMS EXACTAMENTE como están escritos en el knowledge base. No resumas, no parafrasees, no inventes ítems, no omitas ninguno.
+9. NO INVENTES NADA FUERA DEL KNOWLEDGE BASE: No inventes nuevos paquetes, precios, servicios, ubicaciones ni promociones. Si el cliente pregunta algo que no esté en el knowledge base, díselo con claridad y, si aplica, ofrece conectarlo con un asesor humano para aclararlo.
 
 REGLAS DE FORMATO WhatsApp:
 1. BILINGÜISMO ESTRICTO: Si el cliente te habla en inglés, RESPONDELO TODO EN INGLÉS (traduce mentalmente la base de conocimiento y los avisos del sistema que te lleguen en español). Nombres de paquetes en inglés: Simple Wedding, Elegant Chapel Wedding, Wedding at Home. Si habla en español, responde en español.
 2. PRESENTACIÓN: Solo en el primer mensaje saluda y preséntate como Cynthia. Después ve directo al grano. Si el cliente envió varios mensajes cortos juntos (ej: 'hol' + 'buenos días'), trátalo como un solo saludo y responde UNA sola vez — nunca saludes dos veces en la misma respuesta.
 3. BURBUJAS ("---"): Usa "---" para separar mensajes. Máximo 2-3 burbujas. CRÍTICO: Si el cliente hace varias preguntas juntas, NO generes dos respuestas completas separadas por "---" (ej: no repitas la lista de lo que incluye, ni hagas dos preguntas de cierre). Todo tu bloque de texto debe ser UNA SOLA respuesta lógica y continua, aunque la dividas en burbujas.
 4. SIN LISTAS: No uses guiones (-), asteriscos (*) ni numeración (EXCEPTO cuando listes textualmente lo que incluye cada paquete).
-5. Termina SIEMPRE con UNA SOLA pregunta breve al final de todo tu mensaje para mantener la charla viva. NUNCA hagas más de una pregunta por turno.
+5. Termina con UNA SOLA pregunta breve al final solo si aporta. NUNCA hagas más de una pregunta por turno. Evita preguntas genéricas si el cliente ya está en un tema específico.
 `;
 
 
@@ -114,24 +125,31 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
             && !hasExplicitBookingWords
             && extractedData.intencion_principal !== 'pagar_reservar';
 
+        // Heurística: playa/parque/montaña/etc. => tratar como Boda a Domicilio (para evitar respuestas negativas)
+        const isExternalLocation = /(playa|beach|parque|park|monta[nñ]a|mountain|jard[ií]n|garden|rancho|sal[oó]n|salon|lugar|afuera|outdoor)/.test(msgLower);
+
         // Guardia 1: Quiere agendar / reservar / visitar
         if (!isJustPickingPackage && (extractedData.quiere_pagar_o_agendar || extractedData.intencion_principal === "pagar_reservar" || hasExplicitBookingWords)) {
-            systemAlert = "AVISO DEL SISTEMA: El cliente quiere agendar, reservar o visitar. Dile que con gusto lo conectas con un asesor humano para coordinar todos los detalles. NO menciones depósitos ni montos.";
+            systemAlert = "AVISO DEL SISTEMA: El cliente quiere reservar/agendar/visitar. Responde breve (2–3 frases): '¡Perfecto! Para reservar tu fecha, te conecto con un asesor humano para coordinarlo de inmediato.' Incluye el horario: 'Lunes a Viernes 10:00 am a 7:00 pm, Sábados 10:00 am a 5:00 pm.' NO menciones depósitos ni montos. No hagas preguntas innecesarias.";
             pasarAhumanoForzado = true;
         }
         // Guardia 2: Quiere hablar con una persona
         else if (extractedData.quiere_humano || extractedData.intencion_principal === "hablar_con_humano") {
-            systemAlert = "AVISO DEL SISTEMA: El cliente quiere hablar con una persona. Sé transparente: dile que eres asesora virtual y que lo conectas con un asesor humano de inmediato.";
+            systemAlert = "AVISO DEL SISTEMA: El cliente quiere hablar con una persona. Sé transparente: eres asesora virtual. Responde en positivo: con gusto lo conectas con un asesor humano de inmediato. No uses frases negativas.";
             pasarAhumanoForzado = true;
         }
         // Guardia 3: Matrimonio mismo sexo
         else if (msgLower.match(/(mismo sexo|gay|lesbiana|homosexual)/)) {
-            systemAlert = "AVISO DEL SISTEMA: El cliente pregunta por matrimonio del mismo sexo. Responde amablemente que lamentablemente no ofrecemos ese servicio.";
+            systemAlert = "AVISO DEL SISTEMA: El cliente pregunta por matrimonio del mismo sexo. Responde con respeto y claridad que no ofrecemos matrimonios del mismo sexo ni ese tipo de bodas civiles. NO lo derives con un asesor humano específicamente para ese servicio y no sugieras alternativas que no estén en el knowledge base.";
         }
         // Guardia 4: Trámite legal / migratorio
         else if (extractedData.intencion_principal === "tramite_legal" || msgLower.match(/(ciudadan[ií]a|huellas|green card|permiso de trabajo|petici[oó]n familiar)/)) {
-            systemAlert = "AVISO DEL SISTEMA: El cliente pregunta por trámites legales o migratorios. Dile que lo conectas con un asesor especializado para ese servicio.";
+            systemAlert = "AVISO DEL SISTEMA: El cliente pregunta por trámites legales o migratorios. Responde en positivo: con gusto lo conectas con un asesor especializado de inmediato. No des precios ni detalles legales.";
             pasarAhumanoForzado = true;
+        }
+        // Ubicación externa (playa/parque/etc.) -> Boda a Domicilio (si no está pasando a humano)
+        else if (isExternalLocation) {
+            systemAlert = "AVISO DEL SISTEMA: El cliente pregunta por realizar la ceremonia en un lugar externo (ej. playa/parque/montaña). Responde breve y en positivo: eso corresponde a la Boda a Domicilio. Da el precio exacto: '$545 de lunes a sábado y $645 los domingos'. Termina con 1 pregunta corta: '¿Para qué día lo estás considerando?'. No menciones lo que no incluye.";
         }
 
         // Si hay pase a humano: agregar horario y alertar al grupo
@@ -148,21 +166,38 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
 
         // Si se pide ubicación: indicarle a Cynthia que envíe la dirección y el pin
         if (extractedData.intencion_principal === 'ubicacion') {
-            systemAlert += " AVISO: El cliente pregunta la dirección. Dile nuestra dirección y que le envías el pin de ubicación.";
+            systemAlert += " AVISO: El cliente pregunta la dirección. Responde EXACTAMENTE en 3 líneas (sin texto adicional): 1) 'Nuestra dirección es 10918 Main St Ste B, El Monte CA 91731.' 2) 'Aquí te dejo el pin de ubicación:' 3) 'Si necesitas algo más, ¡solo dímelo!'.";
         }
         // Si pide fotos o videos
-        if (extractedData.pide_fotos) systemAlert += " AVISO: El cliente quiere ver fotos. Dile que se las envías ahora.";
-        if (extractedData.pide_videos) systemAlert += " AVISO: El cliente quiere ver un video. Dile que se lo envías ahora.";
+        if (extractedData.pide_fotos) systemAlert += " AVISO: El cliente quiere ver fotos. NO escribas '(envío las fotos)' ni menciones que las enviarás; el sistema las enviará automáticamente después de tu mensaje.";
+        if (extractedData.pide_videos) systemAlert += " AVISO: El cliente quiere ver un video. NO escribas '(envío el video)' ni menciones que lo enviarás; el sistema lo enviará automáticamente después de tu mensaje.";
+
+        // Acuse de recibo de documentos/fotos (heurística basada en texto del historial)
+        const userTextHistory = history.filter(m => m.role === "user").map(m => m.content || "").join("\n").toLowerCase();
+        const assistantTextHistory = history.filter(m => m.role === "assistant").map(m => m.content || "").join("\n").toLowerCase();
+        const mediaHints = /(adjunt|adjunto|anex|anexo|te envi[eé]|ya te mand[eé]|envi[eé] (la|el|los|las)|foto|fotos|imagen|imágenes|documento|documentos|archivo|comprobante|recibo|licencia|passport|pasaporte|id|identificaci[oó]n|birth certificate|acta)/;
+        const shouldAcknowledgeMedia = mediaHints.test(userTextHistory) && !/(ya recib[ií]|recib[ií] tus|recib[ií] tu|received your|i got your)/.test(assistantTextHistory);
+        if (shouldAcknowledgeMedia) {
+            systemAlert += " AVISO: En el historial el cliente parece haber enviado documentos/fotos. Haz un acuse de recibo breve y empático: '¡Perfecto! Ya recibí tus documentos/fotos. Un asesor humano los revisará pronto para continuar.'";
+        }
 
 
         // ==========================================
         // CAPA 3: GENERACIÓN DE RESPUESTA LINGÜÍSTICA
         // ==========================================
         // Verificamos si ya hubo mensajes del asistente para no repetir saludo
-        const hasGreeted = history.some(m => m.role === "assistant") || history.filter(m => m.role === "user").length > 1;
-        const greetingInstruction = hasGreeted 
-            ? "REGLA CRÍTICA: YA TE PRESENTASTE ANTES. No vuelvas a decir 'Hola, soy Cynthia' ni a presentarte. Ve directo al grano y responde la pregunta del cliente." 
-            : "REGLA CRÍTICA: Es el primer mensaje. DEBES saludar exactamente con estas palabras y nada más antes o después de este saludo inicial: '¡Hola! Soy Cynthia, tu asesora virtual de My Wedding Palace. ¿Qué tipo de ceremonia te gustaría conocer Boda simple, boda en Capilla elegante o boda a domicilio?'";
+        const userMsgCount = history.filter(m => m.role === "user").length;
+        const assistantMsgCount = history.filter(m => m.role === "assistant").length;
+        const hasGreeted = assistantMsgCount > 0 || userMsgCount > 1;
+        const msgTrim = initialMessage.trim();
+        const msgLowerTrim = msgTrim.toLowerCase();
+        const isShortGreeting = msgTrim.length <= 18 && /^(hola+|holi+|buen(as|os)\s+d[ií]as|buen(as|os)\s+tardes|buen(as|os)\s+noches|hello+|hi+|hey+)$/.test(msgLowerTrim.replace(/[!.?]/g, "").trim());
+
+        const greetingInstruction = hasGreeted
+            ? "REGLA CRÍTICA: Ya te presentaste antes. No vuelvas a decir 'Hola, soy Cynthia' ni a presentarte. Ve directo al grano."
+            : isShortGreeting
+                ? "REGLA CRÍTICA: Es el primer contacto y el cliente solo saludó. Saluda y preséntate como Cynthia en una sola frase natural, y pregunta qué tipo de ceremonia le interesa (Boda Sencilla/Simple, Capilla Elegante, o Boda a Domicilio/Wedding at Home según idioma)."
+                : "REGLA CRÍTICA: Es el primer contacto. Saluda y preséntate como Cynthia brevemente, y responde a la pregunta del cliente sin sonar como menú. Si hace falta, pregunta qué tipo de ceremonia le interesa.";
 
         const synthPrompt = `${SYNTHESIS_PROMPT}\n\n${greetingInstruction}${systemAlert ? `\n\n=== AVISO DEL SISTEMA ===\n${systemAlert}` : ""}\n\n=== BASE DE CONOCIMIENTO ===\n${knowledgeBase}`;
         
@@ -210,7 +245,7 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
             if (extractedData.intencion_principal === 'ubicacion') {
                 await sendPresence(chatId, "composing");
                 await new Promise(r => setTimeout(r, 1000));
-                await sendLocation(chatId, 34.0744, -118.0371, "My Wedding Palace", "10918 Main St Suite B, El Monte, CA 91731");
+                await sendLocation(chatId, 34.0744, -118.0371, "My Wedding Palace", "10918 Main St Ste B, El Monte CA 91731");
             }
 
             return;

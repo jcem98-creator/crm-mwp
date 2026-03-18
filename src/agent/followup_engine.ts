@@ -32,6 +32,23 @@ function isSocialHour(): boolean {
     return hour >= 9 && hour < 20;
 }
 
+function parseDbDate(value: unknown): Date | null {
+    if (typeof value !== "string" || value.trim() === "") return null;
+    const s = value.trim();
+
+    // If it's already ISO-ish with timezone, let Date parse it.
+    if (/[zZ]$|[+-]\d\d:\d\d$/.test(s)) {
+        const d = new Date(s);
+        return Number.isNaN(d.getTime()) ? null : d;
+    }
+
+    // SQLite CURRENT_TIMESTAMP is typically "YYYY-MM-DD HH:MM:SS" in UTC.
+    // Convert to ISO "YYYY-MM-DDTHH:MM:SSZ" to avoid locale-dependent parsing.
+    const iso = s.includes(" ") && !s.includes("T") ? s.replace(" ", "T") + "Z" : s + "Z";
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime()) ? null : d;
+}
+
 export async function processFollowups() {
     if (!isSocialHour()) {
         console.log("[Followup] Fuera de horario social en California. Esperando...");
@@ -44,7 +61,7 @@ export async function processFollowups() {
     for (const lead of leads) {
         try {
             const now = new Date();
-            const lastBotAt = new Date(lead.last_bot_message_at + "Z");
+            const lastBotAt = parseDbDate(lead.last_bot_message_at) ?? now;
             const diffHours = (now.getTime() - lastBotAt.getTime()) / (1000 * 60 * 60);
 
             let shouldSend = false;
