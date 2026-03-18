@@ -157,14 +157,17 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
         let responseContent = response.content || "";
 
         // 3. Extraer tags de control (invisibles para el cliente)
-        const needsHandoff          = responseContent.includes("[PASE_HUMANO]");
-        const sendPhotos            = responseContent.includes("[SEND_PHOTOS]");
-        const sendPhotoDomicilio    = responseContent.includes("[SEND_PHOTO_DOMICILIO]");
-        const sendVideo             = responseContent.includes("[SEND_VIDEO]");
+        const needsHandoff       = responseContent.includes("[PASE_HUMANO]");
+        const sendPhotos         = responseContent.includes("[SEND_PHOTOS]");
+        const sendPhotoDomicilio = responseContent.includes("[SEND_PHOTO_DOMICILIO]");
 
-        // Pin de ubicación: tag explícito O fallback por keywords en la respuesta
-        // (Doble seguro: si la IA olvida el tag pero menciona la dirección o el pin, igual se envía)
+        // Video: tag explícito O fallback por keywords
+        // (Si la IA dice "te lo mando" o similar pero olvidó el tag, igual se envía)
         const responseNorm = responseContent.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const videoKeywords = /(te lo mando|mando el video|te mando el video|aqui te lo mando|sending the video|i'll send you the video|here is the video|sending you the video)/;
+        const sendVideo = responseContent.includes("[SEND_VIDEO]") || videoKeywords.test(responseNorm);
+
+        // Pin de ubicación: tag explícito O fallback por keywords
         const locationKeywords = /(10918 main st|te mando el pin|sending the pin|i'll send you the pin|aqui el pin|aqui tienes el pin|here is the pin|send you the location)/;
         const sendLocationPin = responseContent.includes("[SEND_LOCATION]") || locationKeywords.test(responseNorm);
 
