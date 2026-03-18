@@ -156,20 +156,39 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
 
         let responseContent = response.content || "";
 
-        // 3. Extraer tags de control (invisibles para el cliente)
-        const needsHandoff       = responseContent.includes("[PASE_HUMANO]");
-        const sendPhotos         = responseContent.includes("[SEND_PHOTOS]");
-        const sendPhotoDomicilio = responseContent.includes("[SEND_PHOTO_DOMICILIO]");
-
-        // Video: tag explícito O fallback por keywords
-        // (Si la IA dice "te lo mando" o similar pero olvidó el tag, igual se envía)
+        // 3. Normalizar mensajes para detección
         const responseNorm = responseContent.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        const videoKeywords = /(te lo mando|mando el video|te mando el video|aqui te lo mando|sending the video|i'll send you the video|here is the video|sending you the video)/;
-        const sendVideo = responseContent.includes("[SEND_VIDEO]") || videoKeywords.test(responseNorm);
+        const userNorm     = initialMessage.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-        // Pin de ubicación: tag explícito O fallback por keywords
-        const locationKeywords = /(10918 main st|te mando el pin|sending the pin|i'll send you the pin|aqui el pin|aqui tienes el pin|here is the pin|send you the location)/;
-        const sendLocationPin = responseContent.includes("[SEND_LOCATION]") || locationKeywords.test(responseNorm);
+        // Pase a humano — solo desde el tag de la IA
+        const needsHandoff = responseContent.includes("[PASE_HUMANO]");
+
+        // MULTIMEDIA — Detección por capas:
+        // Capa 1: mensaje del usuario (más fiable)
+        // Capa 2: tag explícito de la IA
+        // Capa 3: keywords en la respuesta de la IA (fallback)
+
+        // FOTOS de capilla: usuario pide foto/photo/imagen/capilla visualmente
+        const userWantsPhotos = /(foto|photo|image|picture|capilla|como es|how is|como luce|how does it look)/i.test(userNorm);
+        const sendPhotos = userWantsPhotos
+            || responseContent.includes("[SEND_PHOTOS]")
+            || /(te mando unas fotos|here are some photos|sending photos|aqui las fotos)/i.test(responseNorm);
+
+        // FOTO de domicilio: usuario pregunta por boda a domicilio + fotos
+        const userWantsDomicilioPhoto = /(domicilio|at home|en casa|how does.*home|como.*domicilio)/i.test(userNorm) && /(foto|photo|picture|image|como|how)/i.test(userNorm);
+        const sendPhotoDomicilio = userWantsDomicilioPhoto || responseContent.includes("[SEND_PHOTO_DOMICILIO]");
+
+        // VIDEO: usuario pregunta por video/recorrido/tour
+        const userWantsVideo = /(video|recorrido|tour|instalaciones)/i.test(userNorm);
+        const sendVideo = userWantsVideo
+            || responseContent.includes("[SEND_VIDEO]")
+            || /(te lo mando|mando el video|te mando el video|sending the video|here is the video)/i.test(responseNorm);
+
+        // PIN de ubicación: usuario pregunta por dirección/mapa/ubicación
+        const userWantsLocation = /(direccion|address|ubicacion|donde|mapa|map|pin|google maps|waze|como llegar|how to get)/i.test(userNorm);
+        const sendLocationPin = userWantsLocation
+            || responseContent.includes("[SEND_LOCATION]")
+            || /(10918 main st|te mando el pin|sending the pin|aqui el pin)/i.test(responseNorm);
 
         // Limpiar todos los tags del texto visible
         responseContent = responseContent
