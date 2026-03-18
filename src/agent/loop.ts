@@ -92,25 +92,29 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
     const history = await memoryDb.getMessages(chatId, 15);
 
     await sendPresence(chatId, "composing");
+    console.log(`[Agent] 🚀 Iniciando loop para ${chatId}`);
 
     try {
         // ==========================================
         // CAPA 1: EXTRACCIÓN CON JSON MODE
         // ==========================================
+        console.log("[Agent] 🧠 Capa 1: Extrayendo intención...");
         const extMessages: LLMMessage[] = [
             { role: "system", content: EXTRACTION_PROMPT },
             ...history.map(m => ({ role: m.role as any, content: m.content }))
         ];
         
         const extractedData = await generateJSON(extMessages);
-        console.log("[Capa 1] Datos extraídos:", extractedData);
+        console.log("[Agent] ✅ Datos extraídos:", JSON.stringify(extractedData));
 
         // Actualizar datos del lead en el CRM
+        console.log("[Agent] 💾 Actualizando lead en DB...");
         await memoryDb.updateLeadStatus(chatId, {
             name: extractedData.cliente_nombre !== "ninguno" ? extractedData.cliente_nombre : undefined,
             package: extractedData.tipo_servicio_mencionado !== "ninguno" ? extractedData.tipo_servicio_mencionado : undefined,
             date: extractedData.fecha_boda_tentativa !== "ninguno" ? extractedData.fecha_boda_tentativa : undefined
         });
+        console.log("[Agent] 🛡️ Capa 2: Procesando Guardianes...");
 
         // ==========================================
         // CAPA 2: GUARDIANES DUROS (solo 4 reglas críticas de negocio)
@@ -212,20 +216,25 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
             await memoryDb.addMessage(chatId, "assistant", response.content);
             // Marcar que el bot respondió y activar el seguimiento
             await memoryDb.updateLeadStatus(chatId, { last_bot_at: true, needs_followup: true });
+            console.log(`[Agent] 📊 Estado del lead actualizado (last_bot_at, needs_followup) para ${chatId}.`);
 
             // Separación de Burbujas por "---"
             const chunks = response.content.split("---").map(c => c.trim()).filter(c => c.length > 0);
+            console.log(`[Agent] 💬 Dividiendo respuesta en ${chunks.length} burbujas para ${chatId}.`);
 
             for (let i = 0; i < chunks.length; i++) {
                 if (i > 0) {
                     await sendPresence(chatId, "composing");
                     await new Promise(resolve => setTimeout(resolve, 800));
+                    console.log(`[Agent] ⏳ Pausa entre burbujas para ${chatId}.`);
                 }
                 await sendText(chatId, chunks[i]);
+                console.log(`[Agent] 📤 Burbuja ${i + 1} enviada para ${chatId}. Contenido: "${chunks[i].substring(0, 50)}..."`);
                 await new Promise(resolve => setTimeout(resolve, 300));
             }
             // --- ENVÍO DE MULTIMEDIA SELECTIVO (Fase 4) ---
             const baseUrl = "https://mwp.botlylatam.cloud/assets/media";
+            console.log(`[Agent] 🖼️ Verificando envío de multimedia para ${chatId}.`);
 
             if (extractedData.pide_fotos) {
                 await sendPresence(chatId, "composing");

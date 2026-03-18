@@ -1,6 +1,9 @@
 import { config } from "./config.js";
 
 export async function sendPresence(remoteJid: string, presence: "composing" | "available" | "unavailable" = "composing") {
+    const number = remoteJid.includes("@") ? remoteJid.split("@")[0] : remoteJid;
+    console.log(`[WhatsApp] Enviando presencia (${presence}) a: ${number}`);
+    
     try {
         const res = await fetch(`${config.EVOLUTION_API_URL}/chat/sendPresence/${config.EVOLUTION_INSTANCE_NAME}`, {
             method: "POST",
@@ -9,13 +12,15 @@ export async function sendPresence(remoteJid: string, presence: "composing" | "a
                 "apikey": config.EVOLUTION_API_KEY as string
             },
             body: JSON.stringify({
-                number: remoteJid,
+                number: number, // Antes pasaba el JID completo, eso daba error 400
                 presence: presence,
                 delay: 1200
             })
         });
         const data = await res.text();
-        console.log(`[WhatsApp] sendPresence response (${res.status}):`, data.substring(0, 200));
+        if (res.status !== 200 && res.status !== 201) {
+            console.error(`[WhatsApp] Error en sendPresence (${res.status}):`, data);
+        }
     } catch (e) {
         console.error("[WhatsApp] Error sending presence:", e);
     }

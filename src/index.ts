@@ -61,6 +61,7 @@ async function main() {
         res.status(200).send("OK");
 
         const payload = req.body;
+        console.log("[WhatsApp] 📥 Webhook recibido:", JSON.stringify(payload).substring(0, 500));
         
         // Ensure this is a message upsert event
         if (!payload || !payload.data || !payload.data.message) {
