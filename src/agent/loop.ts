@@ -129,6 +129,12 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
         const msgLower = initialMessage.toLowerCase();
         const msgNormalized = msgLower.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); // "llámame" -> "llamame"
         const hasExplicitBookingWords = msgNormalized.match(/(agendar|reservar|disponib|book|schedule|appointment|fecha|visitar|ir a su local|llamame|llamenme|cita|reunion)/);
+        
+        // Verificamos si ya hubo mensajes del asistente para no repetir saludo
+        const userMsgCount = history.filter(m => m.role === "user").length;
+        const assistantMsgCount = history.filter(m => m.role === "assistant").length;
+        const hasGreeted = assistantMsgCount > 0 || userMsgCount > 1;
+
         const isJustPickingPackage = extractedData.tipo_servicio_mencionado !== 'ninguno'
             && !hasExplicitBookingWords
             && extractedData.intencion_principal !== 'pagar_reservar';
@@ -140,11 +146,17 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
         let hardBypassResponse: string | null = null;
         let motivoAlerta = "Quiere hablar con un asesor";
 
-        const SOLICITUD_HUMANO_FIXED = `Perfecto, le paso tu solicitud a un asesor humano para coordinar la llamada.
+        // frase unificada que cubre Whatsapp, llamada, ir al local y reserva
+        const SOLICITUD_HUMANO_FIXED_CONTENT = `Perfecto, le paso tu solicitud a un asesor humano para que se comunique contigo por WhatsApp o llamada y coordinar los detalles.
 ---
 Nuestro horario de atención es de lunes a viernes de 10:00 am a 7:00 pm y sábados de 10:00 am a 5:00 pm.
 ---
 ¿Te gustaría saber algo más sobre los paquetes antes de que te contacten?`;
+
+        let SOLICITUD_HUMANO_FIXED = SOLICITUD_HUMANO_FIXED_CONTENT;
+        if (!hasGreeted) {
+             SOLICITUD_HUMANO_FIXED = `¡Hola! Soy Cynthia, Agente IA de My Wedding Palace.\n---\n${SOLICITUD_HUMANO_FIXED_CONTENT}`;
+        }
 
         // Guardia 1: Quiere agendar / reservar / visitar / llamar
         if (!isJustPickingPackage && (extractedData.quiere_pagar_o_agendar || extractedData.intencion_principal === "pagar_reservar" || hasExplicitBookingWords)) {
@@ -190,12 +202,7 @@ Nuestro horario de atención es de lunes a viernes de 10:00 am a 7:00 pm y sába
             systemAlert += " AVISO: El cliente pregunta la dirección. Responde EXACTAMENTE en 3 líneas (sin texto adicional): 1) 'Nuestra dirección es 10918 Main St Ste B, El Monte CA 91731.' 2) 'Aquí te dejo el pin de ubicación:' 3) 'Si necesitas algo más, ¡solo dímelo!'.";
         }
         
-        // Verificamos si ya hubo mensajes del asistente para no repetir saludo
-        const userMsgCount = history.filter(m => m.role === "user").length;
-        const assistantMsgCount = history.filter(m => m.role === "assistant").length;
-        const hasGreeted = assistantMsgCount > 0 || userMsgCount > 1;
-
-        // Si pide fotos o videos (Agregamos saludo forzado si es necesario)
+        // --- ELIMINADO: Acuse de recibo de documentos (causaba falsos positivos con screenshots) ---
         if (extractedData.pide_fotos || extractedData.pide_videos) {
             if (!hasGreeted) {
                 // Si es lo primero que pide, forzamos la identidad
@@ -239,11 +246,7 @@ Nuestro horario de atención es de lunes a viernes de 10:00 am a 7:00 pm y sába
              console.log(`[Agent] 👋 Saludo Agente IA forzado (consistencia) para ${chatId}.`);
         } else {
             const response = await generateResponse(synthMessages);
-            if (!response.content && isShortGreeting) {
-                responseContent = "¡Hola! Soy Cynthia, Agente IA de My Wedding Palace. --- ¿Qué tipo de ceremonia te interesa: Boda Sencilla, Capilla Elegante o Boda a Domicilio?";
-            } else {
-                responseContent = response.content || "";
-            }
+            responseContent = response.content || "";
         }
         
         if (responseContent) {
