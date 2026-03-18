@@ -80,7 +80,7 @@ REGLAS CRÍTICAS DE CONTENIDO:
 REGLAS DE FORMATO WhatsApp:
 1. BILINGÜISMO ESTRICTO: Si el cliente te habla en inglés, RESPONDELO TODO EN INGLÉS (traduce mentalmente la base de conocimiento y los avisos del sistema que te lleguen en español). Nombres de paquetes en inglés: Simple Wedding, Elegant Chapel Wedding, Wedding at Home. Si habla en español, responde en español.
 2. PRESENTACIÓN: Solo en el primer mensaje saluda y preséntate como Cynthia. Después ve directo al grano. Si el cliente envió varios mensajes cortos juntos (ej: 'hol' + 'buenos días'), trátalo como un solo saludo y responde UNA sola vez — nunca saludes dos veces en la misma respuesta.
-3. BURBUJAS ("---"): Usa "---" para separar mensajes. Máximo 2-3 burbujas. CRÍTICO: Si el cliente hace varias preguntas juntas, NO generes dos respuestas completas separadas por "---" (ej: no repitas la lista de lo que incluye, ni hagas dos preguntas de cierre). Todo tu bloque de texto debe ser UNA SOLA respuesta lógica y continua, aunque la dividas en burbujas.
+3. BURBUJAS ("---"): Usa "---" para separar CADA párrafo o idea distinta en burbujas separadas. Por ejemplo, la info del paquete en una burbuja y la pregunta de cierre en otra. Máximo 3 burbujas por respuesta.
 4. SIN LISTAS: No uses guiones (-), asteriscos (*) ni numeración (EXCEPTO cuando listes textualmente lo que incluye cada paquete).
 5. Termina con UNA SOLA pregunta breve al final solo si aporta. NUNCA hagas más de una pregunta por turno. Evita preguntas genéricas si el cliente ya está en un tema específico.
 `;
@@ -132,14 +132,15 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
         // Heurística: playa/parque/montaña/etc. => tratar como Boda a Domicilio (para evitar respuestas negativas)
         const isExternalLocation = /(playa|beach|parque|park|monta[nñ]a|mountain|jard[ií]n|garden|rancho|sal[oó]n|salon|lugar|afuera|outdoor)/.test(msgLower);
 
-        // Guardia 1: Quiere agendar / reservar / visitar
+        // Guardia 1: Quiere agendar / reservar / visitar / llamar
         if (!isJustPickingPackage && (extractedData.quiere_pagar_o_agendar || extractedData.intencion_principal === "pagar_reservar" || hasExplicitBookingWords)) {
-            systemAlert = `AVISO DEL SISTEMA: El cliente quiere reservar/agendar/visitar/llamar. 
-            INSTRUCCIÓN DE RESPUESTA: 
-            1. Usa el verbo 'pasar tu solicitud' o 'avisar', NO 'conectar'. 
-            2. Si el cliente pide una hora muy cerca del cierre (ej: 7 pm) o fuera de horario, responde: 'Con gusto le paso tu solicitud al equipo para que intenten llamarte de inmediato o a primera hora mañana'. 
-            3. Si es horario normal: 'Perfecto, le paso tu pedido a un asesor para coordinarlo de inmediato'. 
-            4. Incluye el horario: Lunes a Viernes 10:00 am a 7:00 pm, Sábados 10:00 am a 5:00 pm.`;
+            systemAlert = `AVISO DEL SISTEMA: El cliente quiere reservar, agendar, visitar o que lo llamen.
+            INSTRUCCIONES DE RESPUESTA:
+            1. Usa el verbo 'le paso tu solicitud' o 'le aviso', NUNCA 'conectar'.
+            2. Si la hora que pide el cliente (o la hora actual) está fuera de: Lunes a Viernes 10:00 am a 7:00 pm o Sábados 10:00 am a 5:00 pm, responde: 'Perfecto, le paso tu solicitud al equipo. Ten en cuenta que el horario que solicitas está fuera de nuestra jornada de atención, pero un asesor se comunicará contigo lo antes posible dentro de nuestro horario habitual.'
+            3. Si está dentro de horario: 'Perfecto, le paso tu pedido a un asesor para coordinarlo de inmediato'.
+            4. Incluye siempre el horario de referencia: Lunes a Viernes de 10:00 am a 7:00 pm, y Sábados de 10:00 am a 5:00 pm.
+            5. Usa "---" para separar el horario de la confirmación de la solicitud.`;
             pasarAhumanoForzado = true;
         }
         // Guardia 2: Quiere hablar con una persona
