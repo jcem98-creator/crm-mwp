@@ -59,7 +59,7 @@ FLUJO CONVERSACIONAL NATURAL:
 
 REGLAS DE ESTILO (conversación humana):
 1. ENFOQUE DIRECTO: Responde primero a la pregunta concreta del cliente. Evita sonar como menú de opciones.
-2. CERO NEGATIVIDAD: No digas "no puedo" / "no es posible". Usa frases proactivas como: "Con gusto te conecto con un asesor humano para coordinarlo de inmediato".
+2. CERO NEGATIVIDAD: No digas "no puedo" / "no es posible". Usa frases proactivas como: "Con gusto le paso tu solicitud a un asesor humano para coordinarlo de inmediato".
 3. NO REDUNDANCIA: Lee el historial. Si ya diste la info en el turno anterior, no la repitas completa; aclara solo lo nuevo.
 4. PREGUNTA FINAL INTELIGENTE: Al final, haz como máximo 1 pregunta breve y pertinente. No hagas preguntas genéricas repetitivas; si el cliente está resolviendo un punto específico, cierra con una pregunta mínima relacionada con el siguiente paso.
 5. BREVEDAD ESTRICTA: Responde en máximo 2–3 frases cortas. Formato objetivo: máximo 3 líneas (saltos de línea) por mensaje.
@@ -134,7 +134,12 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
 
         // Guardia 1: Quiere agendar / reservar / visitar
         if (!isJustPickingPackage && (extractedData.quiere_pagar_o_agendar || extractedData.intencion_principal === "pagar_reservar" || hasExplicitBookingWords)) {
-            systemAlert = "AVISO DEL SISTEMA: El cliente quiere reservar/agendar/visitar. Responde breve (2–3 frases): '¡Perfecto! Para reservar tu fecha, te conecto con un asesor humano para coordinarlo de inmediato.' Incluye el horario: 'Lunes a Viernes 10:00 am a 7:00 pm, Sábados 10:00 am a 5:00 pm.' NO menciones depósitos ni montos. No hagas preguntas innecesarias.";
+            systemAlert = `AVISO DEL SISTEMA: El cliente quiere reservar/agendar/visitar/llamar. 
+            INSTRUCCIÓN DE RESPUESTA: 
+            1. Usa el verbo 'pasar tu solicitud' o 'avisar', NO 'conectar'. 
+            2. Si el cliente pide una hora muy cerca del cierre (ej: 7 pm) o fuera de horario, responde: 'Con gusto le paso tu solicitud al equipo para que intenten llamarte de inmediato o a primera hora mañana'. 
+            3. Si es horario normal: 'Perfecto, le paso tu pedido a un asesor para coordinarlo de inmediato'. 
+            4. Incluye el horario: Lunes a Viernes 10:00 am a 7:00 pm, Sábados 10:00 am a 5:00 pm.`;
             pasarAhumanoForzado = true;
         }
         // Guardia 2: Quiere hablar con una persona
