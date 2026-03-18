@@ -195,7 +195,7 @@ async function main() {
             return; // El bot no responde directamente al cliente
         }
 
-        // --- ENCOLAMIENTO DE MENSAJES DEL CLIENTE ---
+        // --- ENCOLAMIENTO DE MENSAJES DEL CLIENTE (DEBOUNCE) ---
         if (!messageQueues[remoteJid]) {
             messageQueues[remoteJid] = [];
         }
@@ -208,24 +208,35 @@ async function main() {
             clearTimeout(messageTimeouts[remoteJid]);
         }
 
-        // Simulamos que el bot está leyendo y va a escribir
-        sendPresence(remoteJid, "composing").catch(() => {});
-
-        messageTimeouts[remoteJid] = setTimeout(async () => {
-            const combinedText = messageQueues[remoteJid].join(" ");
+        // Función para procesar la cola
+        const processQueue = async () => {
+            if (messageTimeouts[remoteJid]) clearTimeout(messageTimeouts[remoteJid]);
             
+            const combinedText = messageQueues[remoteJid].join(" ").trim();
             delete messageQueues[remoteJid];
             delete messageTimeouts[remoteJid];
 
-            console.log(`[Bot] 🤖 Procesando bloque consolidado de ${cleanNumber}: ${combinedText}`);
+            if (!combinedText) return;
+
+            console.log(`[Bot] 🤖 Procesando bloque consolidado (${cleanNumber}): "${combinedText}"`);
 
             try {
-                // Le pasamos todo bloqueado a agent loop (usa JID como chat ID)
                 await runAgentLoop(remoteJid, combinedText);
             } catch (error) {
                 console.error("[Bot] Error en runAgentLoop:", error);
             }
-        }, 7000); // Espera silenciosa de 7s
+        };
+
+        // Si llegamos a 3 mensajes, procesamos de inmediato
+        if (messageQueues[remoteJid].length >= 3) {
+            console.log(`[Bot] 🚀 Límite de 3 mensajes alcanzado para ${cleanNumber}. Procesando...`);
+            processQueue();
+        } else {
+            // Simulamos que el bot está leyendo/escribiendo
+            sendPresence(remoteJid, "composing").catch(() => {});
+            // Esperamos 10 segundos de silencio para consolidar más mensajes
+            messageTimeouts[remoteJid] = setTimeout(processQueue, 10000); 
+        }
     });
 
     const PORT = config.PORT;
