@@ -66,16 +66,19 @@ REGLAS DE ESTILO (conversación humana):
 6. SIN LISTAS POR DEFECTO: No uses listas ni viñetas. EXCEPCIÓN ÚNICA: si el cliente pregunta explícitamente "¿qué incluye?" / "what's included?" entonces sí debes listar exactamente los ítems del knowledge base.
 7. NO DIGAS "NO INCLUYE" A MENOS QUE LO PREGUNTEN: No menciones lo que no incluye a menos que el cliente lo pregunte explícitamente.
 
-REGLAS CRÍTICAS DE CONTENIDO:
-1. Boda a Domicilio: de LUNES A SÁBADO ($545). Domingo precio especial $645. NUNCA digas 'cualquier día de la semana'.
-2. Boda Sencilla: SOLO de lunes a jueves ($445). NO incluye música ni fotografía.
-3. Boda en Capilla Elegante: viernes a sábado ($495), domingos ($595). Incluye música. Fotografía NO está incluida en ningún paquete (es servicio adicional).
-4. Boda en playa, parque, casa u otro lugar externo SIEMPRE se considera una forma de 'Boda a Domicilio' / 'Wedding at Home'. Explica esto con claridad en vez de decir que 'no se puede'. No inventes precios ni condiciones especiales para la playa; usa exactamente los del paquete a domicilio.
-5. NUNCA confirmes disponibilidad de fechas. NUNCA menciones el depósito de $200. NUNCA pidas datos personales.
-6. Si traen licencia propia: Domicilio baja a $400 (L-S) o $500 (Dom). Capilla baja a $250 (V-S) o $350 (Dom). Sencilla NO tiene descuento.
-7. DIRECCIÓN: Usa SOLO '10918 Main St Ste B, El Monte CA 91731'. NUNCA la inventes.
-8. INCLUSIONS: Cuando el cliente pregunte qué incluye un paquete, CITA LOS ÍTEMS EXACTAMENTE como están escritos en el knowledge base. No resumas, no parafrasees, no inventes ítems, no omitas ninguno.
-9. NO INVENTES NADA FUERA DEL KNOWLEDGE BASE: No inventes nuevos paquetes, precios, servicios, ubicaciones ni promociones. Si el cliente pregunta algo que no esté en el knowledge base, díselo con claridad y, si aplica, ofrece conectarlo con un asesor humano para aclararlo.
+REGLAS CRÍTICAS DE CONTENIDO (MÁXIMA PRIORIDAD):
+1. REGLA DE ORO DESCUENTOS: Si el cliente dice que ya tiene su propia licencia ("traigo licencia", "tengo mis papeles", etc.), los precios BAJAN así (Obligatorio aplicar):
+   - Capilla Elegante: $250 (Viernes a Sábado) / $350 (Domingo).
+   - Boda a Domicilio: $400 (Lunes a Sábado) / $500 (Domingo).
+   - Boda Sencilla: NO tiene descuento ($445).
+2. Boda a Domicilio: de LUNES A SÁBADO ($545). Domingo precio especial $645.
+3. Boda Sencilla: SOLO de lunes a jueves ($445). NO incluye música ni fotografía.
+4. Boda en Capilla Elegante: viernes a sábado ($495), domingos ($595). Incluye música. Fotografía NO está incluida (es servicio adicional).
+5. Boda en playa, parque o exterior: SIEMPRE es 'Boda a Domicilio' ($545/$645).
+6. NUNCA confirmes disponibilidad de fechas ni menciones depósitos.
+7. DIRECCIÓN: '10918 Main St Ste B, El Monte CA 91731'.
+8. INCLUSIONS: Cita los ítems EXACTAMENTE como están en el knowledge base cuando pregunten "¿qué incluye?".
+9. NO INVENTES: Si no está en el knowledge base, di que no sabes y ofrece al asesor humano.
 
 REGLAS DE FORMATO WhatsApp:
 1. BILINGÜISMO ESTRICTO: Si el cliente te habla en inglés, RESPONDELO TODO EN INGLÉS (traduce mentalmente la base de conocimiento y los avisos del sistema que te lleguen en español). Nombres de paquetes en inglés: Simple Wedding, Elegant Chapel Wedding, Wedding at Home. Si habla en español, responde en español.
@@ -132,35 +135,31 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
         // Heurística: playa/parque/montaña/etc. => tratar como Boda a Domicilio (para evitar respuestas negativas)
         const isExternalLocation = /(playa|beach|parque|park|monta[nñ]a|mountain|jard[ií]n|garden|rancho|sal[oó]n|salon|lugar|afuera|outdoor)/.test(msgLower);
 
-        // --- LÓGICA DE PASE A HUMANO (UNIFICADA) ---
-        const SOLICITUD_HUMANO_FIXED = `AVISO CRÍTICO (ORDEN ABSOLUTA): El cliente solicita hablar con un asesor, agendar, llamar o un trámite legal.
-        DEBES RESPONDER ÚNICAMENTE CON ESTAS 3 BURBUJAS, SEPARADAS POR "---". 
-        PROHIBIDO: No menciones la hora que pidió el cliente. No uses el verbo 'conectar'. No añadas nada más.
-        
-        TEXTO EXACTO A ENVIAR:
-        Perfecto, le paso tu solicitud a un asesor humano para coordinar la llamada.
-        ---
-        Nuestro horario de atención es de lunes a viernes de 10:00 am a 7:00 pm y sábados de 10:00 am a 5:00 pm.
-        ---
-        ¿Te gustaría saber algo más sobre los paquetes antes de que te contacten?`;
+        // --- LÓGICA DE PASE A HUMANO (BYPASS TOTAL) ---
+        let hardBypassResponse: string | null = null;
+        const SOLICITUD_HUMANO_FIXED = `Perfecto, le paso tu solicitud a un asesor humano para coordinar la llamada.
+---
+Nuestro horario de atención es de lunes a viernes de 10:00 am a 7:00 pm y sábados de 10:00 am a 5:00 pm.
+---
+¿Te gustaría saber algo más sobre los paquetes antes de que te contacten?`;
 
         // Guardia 1: Quiere agendar / reservar / visitar / llamar
         if (!isJustPickingPackage && (extractedData.quiere_pagar_o_agendar || extractedData.intencion_principal === "pagar_reservar" || hasExplicitBookingWords)) {
-            systemAlert = SOLICITUD_HUMANO_FIXED;
+            hardBypassResponse = SOLICITUD_HUMANO_FIXED;
             pasarAhumanoForzado = true;
         }
         // Guardia 2: Quiere hablar con una persona
         else if (extractedData.quiere_humano || extractedData.intencion_principal === "hablar_con_humano") {
-            systemAlert = SOLICITUD_HUMANO_FIXED;
+            hardBypassResponse = SOLICITUD_HUMANO_FIXED;
             pasarAhumanoForzado = true;
         }
         // Guardia 3: Matrimonio mismo sexo
         else if (msgLower.match(/(mismo sexo|gay|lesbiana|homosexual)/)) {
-            systemAlert = "AVISO DEL SISTEMA: El cliente pregunta por matrimonio del mismo sexo. Responde con respeto y claridad que no ofrecemos matrimonios del mismo sexo ni ese tipo de bodas civiles. NO lo derives con un asesor humano específicamente para ese servicio y no sugieras alternativas que no estén en el knowledge base.";
+            hardBypassResponse = "Lo lamento, pero no ofrecemos matrimonios del mismo sexo ni ese tipo de bodas civiles. --- ¿Te gustaría saber algo de nuestros otros paquetes?";
         }
         // Guardia 4: Trámite legal / migratorio
         else if (extractedData.intencion_principal === "tramite_legal" || msgLower.match(/(ciudadan[ií]a|huellas|green card|permiso de trabajo|petici[oó]n familiar)/)) {
-            systemAlert = SOLICITUD_HUMANO_FIXED;
+            hardBypassResponse = SOLICITUD_HUMANO_FIXED;
             pasarAhumanoForzado = true;
         }
         // Ubicación externa (playa/parque/etc.) -> Boda a Domicilio (si no está pasando a humano)
@@ -222,16 +221,27 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
             ...history.slice(-6).map(m => ({ role: m.role as any, content: m.content })) 
         ];
 
-        const response = await generateResponse(synthMessages);
+        let responseContent: string;
+
+        if (hardBypassResponse) {
+            responseContent = hardBypassResponse;
+            console.log(`[Agent] 🛑 Bypass activado para ${chatId}. Enviando respuesta fija.`);
+        } else if (isShortGreeting && !hasGreeted) {
+             responseContent = "¡Hola! Soy Cynthia, Agente IA de My Wedding Palace. --- ¿Qué tipo de ceremonia te interesa: Boda Sencilla, Capilla Elegante o Boda a Domicilio?";
+             console.log(`[Agent] 👋 Saludo inicial forzado para ${chatId}.`);
+        } else {
+            const response = await generateResponse(synthMessages);
+            responseContent = response.content || "";
+        }
         
-        if (response.content) {
-            await memoryDb.addMessage(chatId, "assistant", response.content);
+        if (responseContent) {
+            await memoryDb.addMessage(chatId, "assistant", responseContent);
             // Marcar que el bot respondió y activar el seguimiento
             await memoryDb.updateLeadStatus(chatId, { last_bot_at: true, needs_followup: true });
             console.log(`[Agent] 📊 Estado del lead actualizado (last_bot_at, needs_followup) para ${chatId}.`);
 
             // Separación de Burbujas por "---"
-            const chunks = response.content.split("---").map(c => c.trim()).filter(c => c.length > 0);
+            const chunks = responseContent.split("---").map(c => c.trim()).filter(c => c.length > 0);
             console.log(`[Agent] 💬 Dividiendo respuesta en ${chunks.length} burbujas para ${chatId}.`);
 
             for (let i = 0; i < chunks.length; i++) {
