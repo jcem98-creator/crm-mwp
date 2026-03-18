@@ -168,15 +168,22 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
         // Capa 2: tag explícito de la IA
         // Capa 3: keywords en la respuesta de la IA (fallback)
 
-        // FOTOS de capilla: usuario pide foto/photo/imagen/capilla visualmente
-        const userWantsPhotos = /(foto|photo|image|picture|capilla|como es|how is|como luce|how does it look)/i.test(userNorm);
-        const sendPhotos = userWantsPhotos
-            || responseContent.includes("[SEND_PHOTOS]")
-            || /(te mando unas fotos|here are some photos|sending photos|aqui las fotos)/i.test(responseNorm);
+        // FOTOS — Diferenciar genérico vs específico:
+        // "tienen fotos?" (genérico)  → manda las 3 (capilla + domicilio)
+        // "boda a domicilio / foto domicilio" (específico) → solo domicilio
+        // "capilla / instalaciones / cómo es" (específico) → solo capilla
+        const userAsksDomicilio   = /(domicilio|at home|en casa)/i.test(userNorm);
+        const userAsksCapillaOnly = /(capilla|chapel|instalacion|como es|how is)/i.test(userNorm) && !userAsksDomicilio;
+        const userAsksFotoGeneric = /(foto|photo|image|picture|imagenes)/i.test(userNorm) && !userAsksDomicilio && !userAsksCapillaOnly;
 
-        // FOTO de domicilio: usuario pregunta por boda a domicilio + fotos
-        const userWantsDomicilioPhoto = /(domicilio|at home|en casa|how does.*home|como.*domicilio)/i.test(userNorm) && /(foto|photo|picture|image|como|how)/i.test(userNorm);
-        const sendPhotoDomicilio = userWantsDomicilioPhoto || responseContent.includes("[SEND_PHOTO_DOMICILIO]");
+        // Fotos de capilla: específico de capilla O fotos genéricas O AI tag
+        const sendPhotos = userAsksCapillaOnly || userAsksFotoGeneric
+            || responseContent.includes("[SEND_PHOTOS]")
+            || /(te mando unas fotos|here are some photos|sending photos)/i.test(responseNorm);
+
+        // Foto de domicilio: específico de domicilio O fotos genéricas O AI tag
+        const sendPhotoDomicilio = userAsksDomicilio || userAsksFotoGeneric
+            || responseContent.includes("[SEND_PHOTO_DOMICILIO]");
 
         // VIDEO: usuario pregunta por video/recorrido/tour
         const userWantsVideo = /(video|recorrido|tour|instalaciones)/i.test(userNorm);
