@@ -135,6 +135,8 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
         const assistantMsgCount = history.filter(m => m.role === "assistant").length;
         const hasGreeted = assistantMsgCount > 0 || userMsgCount > 1;
 
+        const isEnglish = /^(hi+|hello+|hey+|good\s+(morning|afternoon|evening)|how\s+are\s+you|price|cost|info|wedding|call|visit)/i.test(msgNormalized) || extractedData.idioma === 'inglés';
+
         const isJustPickingPackage = extractedData.tipo_servicio_mencionado !== 'ninguno'
             && !hasExplicitBookingWords
             && extractedData.intencion_principal !== 'pagar_reservar';
@@ -147,15 +149,26 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
         let motivoAlerta = "Quiere hablar con un asesor";
 
         // frase unificada que cubre Whatsapp, llamada, ir al local y reserva
-        const SOLICITUD_HUMANO_FIXED_CONTENT = `Perfecto, le paso tu solicitud a un asesor humano para que se comunique contigo por WhatsApp o llamada y coordinar los detalles.
+        const SOLICITUD_HUMANO_FIXED_CONTENT_ES = `Perfecto, le paso tu solicitud a un asesor humano para que se comunique contigo por WhatsApp o llamada y coordinar los detalles.
 ---
 Nuestro horario de atención es de lunes a viernes de 10:00 am a 7:00 pm y sábados de 10:00 am a 5:00 pm.
 ---
 ¿Te gustaría saber algo más sobre los paquetes antes de que te contacten?`;
 
-        let SOLICITUD_HUMANO_FIXED = SOLICITUD_HUMANO_FIXED_CONTENT;
-        if (!hasGreeted) {
-             SOLICITUD_HUMANO_FIXED = `¡Hola! Soy Cynthia, Agente IA de My Wedding Palace.\n---\n${SOLICITUD_HUMANO_FIXED_CONTENT}`;
+        const SOLICITUD_HUMANO_FIXED_CONTENT_EN = `Perfect, I'll pass your request to a human advisor so they can contact you via WhatsApp or call to coordinate the details.
+---
+Our business hours are Monday through Friday from 10:00 am to 7:00 pm and Saturdays from 10:00 am to 5:00 pm.
+---
+Would you like to know anything more about the packages before they contact you?`;
+
+        let SOLICITUD_HUMANO_FIXED = "";
+
+        if (isEnglish) {
+            const greeting = !hasGreeted ? "Hi! I'm Cynthia, AI Agent from My Wedding Palace.\n---\n" : "";
+            SOLICITUD_HUMANO_FIXED = `${greeting}${SOLICITUD_HUMANO_FIXED_CONTENT_EN}`;
+        } else {
+            const greeting = !hasGreeted ? "¡Hola! Soy Cynthia, Agente IA de My Wedding Palace.\n---\n" : "";
+            SOLICITUD_HUMANO_FIXED = `${greeting}${SOLICITUD_HUMANO_FIXED_CONTENT_ES}`;
         }
 
         // Guardia 1: Quiere agendar / reservar / visitar / llamar
@@ -241,9 +254,13 @@ Nuestro horario de atención es de lunes a viernes de 10:00 am a 7:00 pm y sába
             responseContent = hardBypassResponse;
             console.log(`[Agent] 🛑 Bypass activado para ${chatId}. Enviando respuesta fija.`);
         } else if (isShortGreeting) {
-             // Forzamos el saludo oficial siempre que sea un saludo corto, para mayor consistencia
-             responseContent = "¡Hola! Soy Cynthia, Agente IA de My Wedding Palace. --- ¿Qué tipo de ceremonia te interesa: Boda Sencilla, Capilla Elegante o Boda a Domicilio?";
-             console.log(`[Agent] 👋 Saludo Agente IA forzado (consistencia) para ${chatId}.`);
+             // Forzamos el saludo oficial siempre que sea un saludo corto, para mayor consistencia en ambos idiomas
+             if (isEnglish) {
+                 responseContent = "Hi! I'm Cynthia, AI Agent from My Wedding Palace. --- Which type of ceremony are you interested in: Simple Wedding, Elegant Chapel Wedding or Wedding at Home?";
+             } else {
+                 responseContent = "¡Hola! Soy Cynthia, Agente IA de My Wedding Palace. --- ¿Qué tipo de ceremonia te interesa: Boda Sencilla, Capilla Elegante o Boda a Domicilio?";
+             }
+             console.log(`[Agent] 👋 Saludo Agente IA forzado (${isEnglish ? 'EN' : 'ES'}) para ${chatId}.`);
         } else {
             const response = await generateResponse(synthMessages);
             responseContent = response.content || "";
