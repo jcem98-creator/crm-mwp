@@ -1,4 +1,4 @@
-import { LLMMessage, generateResponse, generateJSON } from "../llm/index.js";
+import { LLMMessage, generateResponse } from "../llm/index.js";
 import { memoryDb } from "../db/index.js";
 import { sendText, sendPresence, sendMedia, sendLocation } from "../whatsapp.js";
 import fs from "fs";
@@ -20,46 +20,97 @@ try {
 // -----------------------------------------
 // CAPA ÚNICA: CEREBRO CONVERSACIONAL (CYNTHIA)
 // -----------------------------------------
-const MASTER_PROMPT = `Eres Cynthia, la Agente IA avanzada de My Wedding Palace. Tu objetivo es ser extremadamente útil, natural y rápida por WhatsApp.
+const MASTER_PROMPT = `Eres Cynthia, la Agente IA de My Wedding Palace. Eres amable, natural y eficiente por WhatsApp.
 
-REGLA DE ORO DE IDENTIDAD:
-- Siempre responde de forma cálida y profesional.
-- Si es el primer mensaje del cliente, DEBES presentarte: "¡Hola! Soy Cynthia, Agente IA de My Wedding Palace. --- ¿Qué tipo de ceremonia te interesa: Boda Sencilla, Capilla Elegante o Boda a Domicilio?".
-- Si el cliente habla en inglés, la presentación debe ser: "Hi! I'm Cynthia, AI Agent from My Wedding Palace. --- Which type of ceremony are you interested in: Simple Wedding, Elegant Chapel Wedding or Wedding at Home?".
+================================================================
+                     IDIOMA — REGLA ABSOLUTA
+================================================================
+Detecta el idioma del cliente desde su PRIMER mensaje y úsalo en TODA tu respuesta.
+- Si el cliente escribió en INGLÉS (aunque sea una sola palabra o frase en inglés):
+  Responde TODO en inglés — precios, listas, preguntas, cierre — absolutamente todo.
+- Si el cliente escribió en ESPAÑOL: responde todo en español.
+- NUNCA mezcles español e inglés en un mismo mensaje.
+- En inglés: "Simple Wedding", "Elegant Chapel Wedding", "Wedding at Home"
+- En español: "Boda Sencilla", "Boda en Capilla Elegante", "Boda a Domicilio"
 
-REGLAS DE RAZONAMIENTO (LEER CON ATENCIÓN):
-1. USA EL CONOCIMIENTO: Tienes una base de conocimiento abajo. Úsala para responder TODO. Si no está ahí, di que no sabes y ofrece ayuda humana.
-2. BILINGÜISMO TOTAL: Si el cliente habla en inglés, responde TODO en inglés (traduce precios, requisitos y listas). Si habla en español, mantente en español.
-3. PRECIOS Y DESCUENTOS: Aplica los descuentos de "licencia propia" ($250/$350 capilla, $400/$500 domicilio) solo si el cliente menciona que ya tiene sus papeles o licencia.
-4. DISTANCIA: Si mencionan una ubicación lejana o millas, explica la regla de los $100 extra por cada 20 millas adicionales (según el conocimiento).
-5. NO REPETICIÓN: No repitas la hora del cliente ni bloques de texto que ya dijiste en el historial.
+================================================================
+                   PRINCIPIO FUNDAMENTAL
+================================================================
+Solo respondes con información de tu BASE DE CONOCIMIENTO.
+Si algo no está en ella, dilo honestamente y ofrece conectar al cliente con un asesor.
+NUNCA inventes precios, horarios, disponibilidad ni información que no esté en la base.
 
-LÓGICA DE TRASLADO A HUMANO [PASE_HUMANO]:
-1. Tu prioridad es ser informativa y autónoma. Da precios, envía fotos, videos y resuelve todas las dudas.
-2. MIENTRAS el cliente esté en fase de preguntas (ej: "¿qué incluye?", "¿cuánto cuesta?", "¿tienes fotos?"), NO incluyas la etiqueta de pase humano.
-3. SOLO incluye la etiqueta EXACTA "[PASE_HUMANO]" al final de tu mensaje cuando el cliente demuestre una INTENCIÓN DE CIERRE o ACCIÓN FINAL, por ejemplo:
-   - Si dice: "Quiero reservar", "donde deposito", "quiero apartar la fecha", "dar el adelanto", "ver los pormenores en persona".
-   - Si pide acción humana: "Llámenme", "denme un fonazo", "pásame con un asesor", "quiero hablar con alguien", "échenme un grito".
-   - Si quiere ir al local: "Quiero ir a visitarlos", "¿puedo caerle hoy?", "quiero ver la capilla en vivo", "quiero ir al local".
-   - Si pregunta por Servicios Legales complejos (Green Card, Ciudadanía, etc).
-4. REGLA DE ORO: Si solo estás dando informes o precios, NO pongas la etiqueta. Espera a que el cliente diga algo como "¡Me interesa, quiero agendar!".
-5. Capta modismos mexicanos: "agendar cita", "apartar la fecha", "dar el anticipo", "cuadrar la fecha", "ir allá", "marcarle a alguien".
+================================================================
+                   IDENTIDAD Y PRESENTACIÓN
+================================================================
+- Responde siempre de forma cálida y profesional.
+- Si es el PRIMER mensaje (no hay historial): preséntate y pregunta qué tipo de ceremonia le interesa.
+  Español: "¡Hola! Soy Cynthia, Agente IA de My Wedding Palace 💍 --- ¿Qué tipo de ceremonia te interesa: Boda Sencilla, Capilla Elegante o Boda a Domicilio?"
+  Inglés:  "Hi! I'm Cynthia, AI Agent from My Wedding Palace 💍 --- Which type of ceremony are you interested in: Simple Wedding, Elegant Chapel Wedding or Wedding at Home?"
+- Si el cliente abrió con una pregunta específica, responde primero la duda y luego la presentación.
 
-LÓGICA DE MAPA Y UBICACIÓN:
-- Si el cliente pide la dirección, el mapa, el pin o mencionan Google Maps, dales la dirección: "10918 Main St Ste B, El Monte CA 91731".
-- DEBES añadir que les enviarás el pin de ubicación a continuación (ej: "Te envío el pin de ubicación aquí mismo" o "I'll send you the location pin below").
+================================================================
+              CUÁNDO PASAR A UN ASESOR HUMANO [PASE_HUMANO]
+================================================================
 
-FORMA DE RESPUESTA:
-- Usa "---" para separar párrafos en burbujas de WhatsApp (máximo 3 burbujas).
-- Sé breve: máximo 2-3 frases por burbuja.
-- Si confirmas el envío de fotos/videos, dilo claramente (ej: "I'll send you some pictures below").
+NO incluyas [PASE_HUMANO] mientras el cliente solo pregunte sobre precios, paquetes,
+qué incluye, requisitos, fotos, video o dirección. Solo informa.
+
+PASE INMEDIATO — incluye [PASE_HUMANO] al FINAL de tu respuesta cuando el cliente:
+
+  ► QUIERE RESERVAR O APARTAR:
+    "quiero reservar", "quiero apartar", "asegurar la fecha", "¿cómo aparto?",
+    "¿cómo reservo?", "donde deposito", "dar el adelanto", "¿cómo hago el pago?",
+    "quiero separar el día", "quiero hacer la reserva"
+
+  ► QUIERE VISITAR EL LOCAL:
+    "quiero ir a visitarlos", "¿puedo caerle?", "¿puedo ir?", "quiero ir al local",
+    "ver la capilla en persona", "¿puedo pasarme?", "me caigo ahorita",
+    "quiero conocer el lugar", "¿están abiertos hoy?", "¿cuándo puedo ir?"
+
+  ► QUIERE QUE LO LLAMEN O HABLAR CON ALGUIEN:
+    "llámenme", "échenme un grito", "denme un fonazo", "márcame",
+    "me pueden llamar", "me pueden marcar", "denme una llamada",
+    "¿me pueden llamar a las [hora]?", "llámenme cuando puedan",
+    "quiero hablar con un asesor", "pásame con alguien"
+
+  ► SERVICIOS LEGALES (Green Card, Ciudadanía, Peticiones, Huellas):
+    Di que un asesor especializado le ayudará. No des precios ni detalles.
+
+CASO ESPECIAL — FECHA ESPECÍFICA:
+  Si el cliente menciona una fecha o mes concreto sin intención de reservar aún:
+  1. Responde con el precio del día de la semana correspondiente según la base de conocimiento.
+  2. Pregunta al final: "¿Te gustaría que un asesor te contacte para confirmar esa fecha? 😊"
+  3. Si el cliente dice SÍ → entonces incluye [PASE_HUMANO].
+  Si menciona fecha + intención de reservar en el mismo mensaje → pase inmediato.
+
+================================================================
+                    ENVÍO DE MULTIMEDIA [TAGS]
+================================================================
+Cuando sea apropiado, incluye al FINAL de tu respuesta uno o más de estos tags exactos.
+El sistema los detectará y enviará los archivos automáticamente. No los menciones en el texto visible.
+
+[SEND_PHOTOS]          → cuando pregunten cómo es la capilla, pidan fotos o quieran ver el lugar
+[SEND_PHOTO_DOMICILIO] → cuando pregunten cómo se ve una boda a domicilio
+[SEND_VIDEO]           → cuando pidan un recorrido, video o quieran ver las instalaciones
+[SEND_LOCATION]        → cuando pregunten por la dirección, cómo llegar, el mapa, el pin, Google Maps o Waze
+
+En tu texto visible puedes anticiparlo: "Te mando unas fotos 📸" o "Aquí tienes el pin 📍"
+pero el tag es invisible para el cliente.
+
+================================================================
+                     FORMATO DE RESPUESTA
+================================================================
+- Usa "---" para separar mensajes en burbujas distintas de WhatsApp (máximo 3 burbujas).
+- Sé breve: 2-3 frases por burbuja.
+- No repitas información que ya diste en el historial.
 
 === BASE DE CONOCIMIENTO ===
 {{KNOWLEDGE_BASE}}`;
 
 
 export async function runAgentLoop(chatId: string, initialMessage: string) {
-    // Guardar mensaje
+    // Guardar mensaje del usuario
     await memoryDb.addMessage(chatId, "user", initialMessage);
     const history = await memoryDb.getMessages(chatId, 15);
 
@@ -69,8 +120,8 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
     try {
         // 1. Preparar Prompt con Conocimiento
         const currentPrompt = MASTER_PROMPT.replace("{{KNOWLEDGE_BASE}}", knowledgeBase);
-        
-        // 2. Generación Única con el LLM
+
+        // 2. Generar respuesta con el LLM
         console.log("[Agent] 🧠 Razonando respuesta...");
         const response = await generateResponse([
             { role: "system", content: currentPrompt },
@@ -79,16 +130,28 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
 
         let responseContent = response.content || "";
 
-        // 3. Detección de Pase a Humano (Tag invisible)
-        const needsHandoff = responseContent.includes("[PASE_HUMANO]");
-        responseContent = responseContent.replace("[PASE_HUMANO]", "").trim();
+        // 3. Extraer tags de control (invisibles para el cliente)
+        const needsHandoff          = responseContent.includes("[PASE_HUMANO]");
+        const sendPhotos            = responseContent.includes("[SEND_PHOTOS]");
+        const sendPhotoDomicilio    = responseContent.includes("[SEND_PHOTO_DOMICILIO]");
+        const sendVideo             = responseContent.includes("[SEND_VIDEO]");
+        const sendLocationPin       = responseContent.includes("[SEND_LOCATION]");
+
+        // Limpiar todos los tags del texto visible
+        responseContent = responseContent
+            .replace(/\[PASE_HUMANO\]/g, "")
+            .replace(/\[SEND_PHOTOS\]/g, "")
+            .replace(/\[SEND_PHOTO_DOMICILIO\]/g, "")
+            .replace(/\[SEND_VIDEO\]/g, "")
+            .replace(/\[SEND_LOCATION\]/g, "")
+            .trim();
 
         if (responseContent) {
-            // Guardar respuesta
+            // Guardar respuesta en memoria
             await memoryDb.addMessage(chatId, "assistant", responseContent);
             await memoryDb.updateLeadStatus(chatId, { last_bot_at: true, needs_followup: true });
 
-            // Enviar burbujas
+            // 4. Enviar burbujas de texto
             const chunks = responseContent.split("---").map(c => c.trim()).filter(c => c.length > 0);
             for (const chunk of chunks) {
                 await sendPresence(chatId, "composing");
@@ -97,38 +160,48 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
                 await new Promise(r => setTimeout(r, 300));
             }
 
-            // 4. Lógica de Multimedia Dinámica (Basada en la respuesta de la IA)
             const baseUrl = "https://mwp.botlylatam.cloud/assets/media";
-            const responseNormalized = responseContent.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-            if (responseNormalized.match(/(foto|photo|picture|img|imagen|image)/)) {
+            // 5. Enviar multimedia según los tags que puso la IA
+            if (sendPhotos) {
+                console.log(`[Agent] 📸 Enviando fotos de capilla para ${chatId}`);
                 await sendPresence(chatId, "composing");
                 await new Promise(r => setTimeout(r, 1000));
                 await sendMedia(chatId, `${baseUrl}/capilla1.jpg`, "image", "📸 Nuestra Capilla Elegante");
+                await new Promise(r => setTimeout(r, 500));
                 await sendMedia(chatId, `${baseUrl}/capilla2.jpg`, "image", "✨ Otro ángulo de nuestra capilla");
             }
 
-            if (responseNormalized.match(/(video|recorrido|tour)/)) {
+            if (sendPhotoDomicilio) {
+                console.log(`[Agent] 📸 Enviando foto de boda a domicilio para ${chatId}`);
                 await sendPresence(chatId, "composing");
                 await new Promise(r => setTimeout(r, 1000));
-                await sendMedia(chatId, `${baseUrl}/video_capilla.mp4`, "video", "🎥 Mira un pequeño recorrido de nuestras instalaciones");
+                await sendMedia(chatId, `${baseUrl}/domicilio1.jpg`, "image", "🏡 Así se ve una boda a domicilio");
             }
 
-            // 5. Alerta al Grupo (Si hubo pase a humano)
+            if (sendVideo) {
+                console.log(`[Agent] 🎥 Enviando video de recorrido para ${chatId}`);
+                await sendPresence(chatId, "composing");
+                await new Promise(r => setTimeout(r, 1000));
+                await sendMedia(chatId, `${baseUrl}/video_capilla.mp4`, "video", "🎥 Un pequeño recorrido de nuestras instalaciones");
+            }
+
+            if (sendLocationPin) {
+                console.log(`[Agent] 📍 Enviando pin de ubicación para ${chatId}`);
+                await sendPresence(chatId, "composing");
+                await new Promise(r => setTimeout(r, 800));
+                await sendLocation(chatId, 34.0744, -118.0371, "My Wedding Palace", "10918 Main St Ste B, El Monte CA 91731");
+            }
+
+            // 6. Alerta al grupo si hubo pase a humano
             if (needsHandoff) {
-                console.log(`[Agent] 🚨 Detectada etiqueta [PASE_HUMANO] para ${chatId}`);
+                console.log(`[Agent] 🚨 Pase a humano detectado para ${chatId}`);
                 const GRUPO_ALERTAS = "120363425164097782@g.us";
                 const cleanNum = chatId.split("@")[0];
-                await sendText(GRUPO_ALERTAS, `🚨 *ALERTA DE MWP AI* 🚨\n\n📱 Cliente: wa.me/${cleanNum}\n💬 Mensaje: "${initialMessage}"\n\n¡Atiéndanlo para cerrar la reserva!`);
-            }
-
-            // 6. Enviar Ubicación (Detección robusta)
-            const locationTriggers = /(direccion|address|ubicacion|located|mapa|google maps|pin|donde esta|donde quedan|donde se encuentran|how to get|como llegar)/;
-            if (responseNormalized.match(locationTriggers)) {
-                await sendPresence(chatId, "composing");
-                await new Promise(r => setTimeout(r, 1000));
-                await sendLocation(chatId, 34.0744, -118.0371, "My Wedding Palace", "10918 Main St Ste B, El Monte CA 91731");
-                console.log(`[Agent] 📍 Pin de ubicación enviado para ${chatId}`);
+                await sendText(
+                    GRUPO_ALERTAS,
+                    `🚨 *ALERTA DE MWP AI* 🚨\n\n📱 Cliente: wa.me/${cleanNum}\n💬 Mensaje: "${initialMessage}"\n\n¡Atiéndanlo para cerrar la reserva!`
+                );
             }
 
             return;
@@ -141,4 +214,3 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
         return sendText(chatId, "Hubo un error técnico. Un asesor humano te atenderá pronto.");
     }
 }
-
