@@ -59,7 +59,7 @@ FLUJO CONVERSACIONAL NATURAL:
 
 REGLAS DE ESTILO (conversación humana):
 1. ENFOQUE DIRECTO: Responde primero a la pregunta concreta del cliente. Evita sonar como menú de opciones.
-2. CERO NEGATIVIDAD: No digas "no puedo" / "no es posible". Usa frases proactivas como: "Con gusto le paso tu solicitud a un asesor humano para coordinarlo de inmediato".
+2. CERO NEGATIVIDAD (PROHIBIDO 'CONECTAR'): No digas "no puedo" / "no es posible". Jamás uses el verbo "conectar". Usa frases proactivas y naturales como: "Con gusto le paso tu solicitud a un asesor humano para coordinarlo de inmediato".
 3. NO REDUNDANCIA: Lee el historial. Si ya diste la info en el turno anterior, no la repitas completa; aclara solo lo nuevo.
 4. PREGUNTA FINAL INTELIGENTE: Al final, haz como máximo 1 pregunta breve y pertinente. No hagas preguntas genéricas repetitivas; si el cliente está resolviendo un punto específico, cierra con una pregunta mínima relacionada con el siguiente paso.
 5. BREVEDAD ESTRICTA: Responde en máximo 2–3 frases cortas. Formato objetivo: máximo 3 líneas (saltos de línea) por mensaje.
@@ -135,11 +135,11 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
         // Guardia 1: Quiere agendar / reservar / visitar / llamar
         if (!isJustPickingPackage && (extractedData.quiere_pagar_o_agendar || extractedData.intencion_principal === "pagar_reservar" || hasExplicitBookingWords)) {
             systemAlert = `AVISO DEL SISTEMA: El cliente quiere reservar, agendar, visitar o que lo llamen.
-            INSTRUCCIONES DE RESPUESTA:
-            1. Usa el verbo 'le paso tu solicitud' o 'le aviso', NUNCA 'conectar'.
-            2. Si la hora que pide el cliente (o la hora actual) está fuera de: Lunes a Viernes 10:00 am a 7:00 pm o Sábados 10:00 am a 5:00 pm, responde: 'Perfecto, le paso tu solicitud al equipo. Ten en cuenta que el horario que solicitas está fuera de nuestra jornada de atención, pero un asesor se comunicará contigo lo antes posible dentro de nuestro horario habitual.'
+            INSTRUCCIONES DE RESPUESTA OBLIGATORIAS:
+            1. Usa el verbo 'le paso tu solicitud' o 'le aviso', NUNCA 'conectar' (está prohibido).
+            2. Si la hora que solicita el cliente (ej: 9 pm, 8 pm, 7 pm o antes de las 10 am) está fuera de: Lunes a Viernes 10:00 am a 7:00 pm o Sábados 10:00 am a 5:00 pm, responde EXACTAMENTE: 'Perfecto, le paso tu solicitud al equipo. Ten en cuenta que el horario que solicitas está fuera de nuestra jornada de atención, pero un asesor se comunicará contigo lo antes posible dentro de nuestro horario habitual.'
             3. Si está dentro de horario: 'Perfecto, le paso tu pedido a un asesor para coordinarlo de inmediato'.
-            4. Incluye siempre el horario de referencia: Lunes a Viernes de 10:00 am a 7:00 pm, y Sábados de 10:00 am a 5:00 pm.
+            4. Incluye siempre el horario de referencia en una burbuja aparte: Lunes a Viernes de 10:00 am a 7:00 pm, y Sábados de 10:00 am a 5:00 pm.
             5. Usa "---" para separar el horario de la confirmación de la solicitud.`;
             pasarAhumanoForzado = true;
         }
