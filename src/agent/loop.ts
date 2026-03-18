@@ -111,20 +111,24 @@ Incluye estos tags al FINAL de tu respuesta cuando aplique. Son invisibles para 
 El sistema los procesa y envía los archivos automáticamente.
 
 [SEND_PHOTOS]          → cuando pregunten cómo es la capilla, pidan fotos o quieran ver el lugar.
-                         Solo manda fotos. NO incluyas lista de items del paquete en ese mensaje.
+                         Solo manda fotos. NO incluyas lista de items del paquete en ese mismo mensaje.
 [SEND_PHOTO_DOMICILIO] → cuando pregunten cómo se ve una boda a domicilio o pidan ver ese servicio.
-[SEND_VIDEO]           → SOLO cuando pidan explícitamente un recorrido o video. No con fotos normales.
+[SEND_VIDEO]           → cuando el cliente pregunta si tienen video, pide verlo o pide un recorrido.
+                         ENVÍALO DIRECTAMENTE. No preguntes si lo quiere, ya lo pidió.
+                         Di: "Aquí te mando un video de nuestras instalaciones 🎥" y usa el tag.
 [SEND_LOCATION]        → cuando pregunten dirección, cómo llegar, mapa, pin, Google Maps o Waze.
-                         SIEMPRE envíalo con la dirección sin preguntar permiso.
+                         SIEMPRE junto con la dirección, sin preguntar permiso.
                          Di: "Nuestra dirección es 10918 Main St Ste B, El Monte CA 91731. Te mando el pin 📍"
 
-En el texto visible anticípalo brevemente: "Te mando unas fotos 📸" / "Te mando el pin 📍"
+REGLA IMPORTANTE: Siempre incluye el tag correspondiente cuando aplique. Es obligatorio.
 
 ================================================================
                      FORMATO DE RESPUESTA
 ================================================================
-- Usa "---" para separar mensajes en burbujas distintas de WhatsApp (máximo 3 burbujas).
-- Sé breve: 2-3 frases por burbuja.
+- Escribe en prosa natural, como una persona escribiría en WhatsApp.
+- Respuestas cortas y directas, máximo 3-4 líneas por mensaje.
+- Usa "---" SOLO cuando necesites separar dos temas claramente distintos en el mismo mensaje.
+- NO fragmentes artificialmente una idea en dos burbujas si cabe en una sola.
 - No repitas información que ya diste en el historial.
 
 === BASE DE CONOCIMIENTO ===
@@ -157,7 +161,12 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
         const sendPhotos            = responseContent.includes("[SEND_PHOTOS]");
         const sendPhotoDomicilio    = responseContent.includes("[SEND_PHOTO_DOMICILIO]");
         const sendVideo             = responseContent.includes("[SEND_VIDEO]");
-        const sendLocationPin       = responseContent.includes("[SEND_LOCATION]");
+
+        // Pin de ubicación: tag explícito O fallback por keywords en la respuesta
+        // (Doble seguro: si la IA olvida el tag pero menciona la dirección o el pin, igual se envía)
+        const responseNorm = responseContent.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const locationKeywords = /(10918 main st|te mando el pin|sending the pin|i'll send you the pin|aqui el pin|aqui tienes el pin|here is the pin|send you the location)/;
+        const sendLocationPin = responseContent.includes("[SEND_LOCATION]") || locationKeywords.test(responseNorm);
 
         // Limpiar todos los tags del texto visible
         responseContent = responseContent
