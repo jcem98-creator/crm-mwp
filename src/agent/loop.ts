@@ -140,7 +140,7 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
         const assistantMsgCount = history.filter(m => m.role === "assistant").length;
         const hasGreeted = assistantMsgCount > 0 || userMsgCount > 1;
 
-        const isEnglish = /^(hi+|hello+|hey+|good\s+(morning|afternoon|evening)|how\s+are\s+you|price|cost|info|wedding|call|visit)/i.test(msgNormalized) || extractedData.idioma === 'inglés';
+        const isEnglish = /^(hi+|hello+|hey+|good\s+(morning|afternoon|evening)|how\s+are\s+you|price|cost|info|wedding|call|visit|what|tell|services|speak|english)/i.test(msgNormalized) || extractedData.idioma === 'inglés';
 
         const isJustPickingPackage = extractedData.tipo_servicio_mencionado !== 'ninguno'
             && !hasExplicitBookingWords
