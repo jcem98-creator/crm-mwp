@@ -127,7 +127,8 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
         let pasarAhumanoForzado = false;
 
         const msgLower = initialMessage.toLowerCase();
-        const hasExplicitBookingWords = msgLower.match(/(agendar|reservar|disponib|book|schedule|appointment|fecha disponible|quiero ir|visitar|ir a su local)/);
+        const msgNormalized = msgLower.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); // "llámame" -> "llamame"
+        const hasExplicitBookingWords = msgNormalized.match(/(agendar|reservar|disponib|book|schedule|appointment|fecha|visitar|ir a su local|llamame|llamenme|cita|reunion)/);
         const isJustPickingPackage = extractedData.tipo_servicio_mencionado !== 'ninguno'
             && !hasExplicitBookingWords
             && extractedData.intencion_principal !== 'pagar_reservar';
@@ -137,6 +138,8 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
 
         // --- LÓGICA DE PASE A HUMANO (BYPASS TOTAL) ---
         let hardBypassResponse: string | null = null;
+        let motivoAlerta = "Quiere hablar con un asesor";
+
         const SOLICITUD_HUMANO_FIXED = `Perfecto, le paso tu solicitud a un asesor humano para coordinar la llamada.
 ---
 Nuestro horario de atención es de lunes a viernes de 10:00 am a 7:00 pm y sábados de 10:00 am a 5:00 pm.
@@ -147,6 +150,13 @@ Nuestro horario de atención es de lunes a viernes de 10:00 am a 7:00 pm y sába
         if (!isJustPickingPackage && (extractedData.quiere_pagar_o_agendar || extractedData.intencion_principal === "pagar_reservar" || hasExplicitBookingWords)) {
             hardBypassResponse = SOLICITUD_HUMANO_FIXED;
             pasarAhumanoForzado = true;
+            motivoAlerta = "Quiere agendar/reservar/llamada";
+            
+            // Intentar extraer hora del mensaje para mandarla al grupo
+            const horaMatch = msgLower.match(/(\d{1,2})\s*(am|pm|pm|a\.m\.|p\.m\.)/i);
+            if (horaMatch) {
+                motivoAlerta += ` (Pidió a las ${horaMatch[0]})`;
+            }
         }
         // Guardia 2: Quiere hablar con una persona
         else if (extractedData.quiere_humano || extractedData.intencion_principal === "hablar_con_humano") {
@@ -170,13 +180,9 @@ Nuestro horario de atención es de lunes a viernes de 10:00 am a 7:00 pm y sába
         // Si hay pase a humano: agregar horario y alertar al grupo
         const GRUPO_ALERTAS = "120363425164097782@g.us";
         if (pasarAhumanoForzado) {
-            systemAlert += " Menciona nuestro horario de atención: Lunes a Viernes 10:00 am a 7:00 pm, Sábados 10:00 am a 5:00 pm.";
+            console.log(`[Agent] 🚨 Disparando ALERTA al grupo para ${chatId}. Motivo: ${motivoAlerta}`);
             const cleanNum = chatId.split("@")[0];
-            let motivo = "Quiere hablar con un asesor";
-            if (extractedData.quiere_pagar_o_agendar || hasExplicitBookingWords) motivo = "Quiere agendar/reservar/visitar";
-            else if (extractedData.intencion_principal === "tramite_legal") motivo = "Consulta trámite legal/migratorio";
-            else if (extractedData.quiere_humano) motivo = "Pidió hablar con un humano";
-            sendText(GRUPO_ALERTAS, `🚨 *ALERTA DE MWP AI* 🚨\n\n📱 Cliente: wa.me/${cleanNum}\n📋 Motivo: ${motivo}\n💬 Mensaje: "${initialMessage}"\n\n¡Atiéndanlo pronto!`).catch(() => {});
+            sendText(GRUPO_ALERTAS, `🚨 *ALERTA DE MWP AI* 🚨\n\n📱 Cliente: wa.me/${cleanNum}\n📋 Motivo: ${motivoAlerta}\n💬 Mensaje: "${initialMessage}"\n\n¡Atiéndanlo pronto!`).catch(e => console.error("[Agent] Fallo al enviar alerta:", e));
         }
 
         // Si se pide ubicación: indicarle a Cynthia que envíe la dirección y el pin
@@ -226,12 +232,17 @@ Nuestro horario de atención es de lunes a viernes de 10:00 am a 7:00 pm y sába
         if (hardBypassResponse) {
             responseContent = hardBypassResponse;
             console.log(`[Agent] 🛑 Bypass activado para ${chatId}. Enviando respuesta fija.`);
-        } else if (isShortGreeting && !hasGreeted) {
+        } else if (isShortGreeting) {
+             // Forzamos el saludo oficial siempre que sea un saludo corto, para mayor consistencia
              responseContent = "¡Hola! Soy Cynthia, Agente IA de My Wedding Palace. --- ¿Qué tipo de ceremonia te interesa: Boda Sencilla, Capilla Elegante o Boda a Domicilio?";
-             console.log(`[Agent] 👋 Saludo inicial forzado para ${chatId}.`);
+             console.log(`[Agent] 👋 Saludo Agente IA forzado (consistencia) para ${chatId}.`);
         } else {
             const response = await generateResponse(synthMessages);
-            responseContent = response.content || "";
+            if (!response.content && isShortGreeting) {
+                responseContent = "¡Hola! Soy Cynthia, Agente IA de My Wedding Palace. --- ¿Qué tipo de ceremonia te interesa: Boda Sencilla, Capilla Elegante o Boda a Domicilio?";
+            } else {
+                responseContent = response.content || "";
+            }
         }
         
         if (responseContent) {
