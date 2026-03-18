@@ -178,9 +178,10 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
         const callKeywords    = /(me pueden llamar|pueden llamarme|llamarme|marcame|llavenme|echenme|fonazo|call me|can you call)/i;
         const reserveKeywords = /(como reservo|como aparto|quiero reservar|quiero apartar|hacer la reserva|how do i book|how do i reserve|want to book|want to reserve)/i;
         const legalKeywords   = /(green card|ciudadania|peticion familiar|huellas|live scan|citizenship)/i;
+        const contactKeywords = /(contactame|contactenme|con un asesor|quiero hablar|quiero que me contacten|me contactan|pasame|pásame|hablar con alguien|contact me|speak with|talk to someone|talk to an advisor)/i;
 
         const userTriggersHandoff = visitKeywords.test(userNorm) || callKeywords.test(userNorm)
-            || reserveKeywords.test(userNorm) || legalKeywords.test(userNorm);
+            || reserveKeywords.test(userNorm) || legalKeywords.test(userNorm) || contactKeywords.test(userNorm);
         const aiTriggeredHandoff  = responseContent.includes("[PASE_HUMANO]");
         const needsHandoff        = userTriggersHandoff || aiTriggeredHandoff;
 
@@ -268,10 +269,15 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
                 console.log(`[Agent] 🚨 Pase a humano detectado para ${chatId}`);
                 const GRUPO_ALERTAS = "120363425164097782@g.us";
                 const cleanNum = chatId.split("@")[0];
-                await sendText(
-                    GRUPO_ALERTAS,
-                    `🚨 *ALERTA DE MWP AI* 🚨\n\n📱 Cliente: wa.me/${cleanNum}\n💬 Mensaje: "${initialMessage}"\n\n¡Atiéndanlo para cerrar la reserva!`
-                );
+                try {
+                    await sendText(
+                        GRUPO_ALERTAS,
+                        `🚨 *ALERTA DE MWP AI* 🚨\n\n📱 Cliente: wa.me/${cleanNum}\n💬 Mensaje: "${initialMessage}"\n\n¡Atiéndanlo para cerrar la reserva!`
+                    );
+                    console.log(`[Agent] ✅ Alerta enviada al grupo ${GRUPO_ALERTAS}`);
+                } catch (groupErr: any) {
+                    console.error(`[Agent] 🔴 Error enviando alerta al grupo:`, groupErr?.message || groupErr);
+                }
             }
 
             return;
