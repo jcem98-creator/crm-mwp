@@ -165,7 +165,7 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
             if (extractedData.quiere_pagar_o_agendar || hasExplicitBookingWords) motivo = "Quiere agendar/reservar/visitar";
             else if (extractedData.intencion_principal === "tramite_legal") motivo = "Consulta trámite legal/migratorio";
             else if (extractedData.quiere_humano) motivo = "Pidió hablar con un humano";
-            sendText(GRUPO_ALERTAS, `🚨 *ALERTA DE MWP AI* 🚨\n\n📱 Cliente: wa.me/${cleanNum}\n📋 Motivo: ${motivo}\n\n¡Atiéndanlo pronto!`).catch(() => {});
+            sendText(GRUPO_ALERTAS, `🚨 *ALERTA DE MWP AI* 🚨\n\n📱 Cliente: wa.me/${cleanNum}\n📋 Motivo: ${motivo}\n💬 Mensaje: "${initialMessage}"\n\n¡Atiéndanlo pronto!`).catch(() => {});
         }
 
         // Si se pide ubicación: indicarle a Cynthia que envíe la dirección y el pin
