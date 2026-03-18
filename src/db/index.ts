@@ -20,6 +20,7 @@ export class PostgresMemoryDB {
                 user: config.PGUSER,
                 password: config.PGPASSWORD,
                 database: config.PGDATABASE,
+                connectionTimeoutMillis: 5000, // 5 segundos de espera máximo
                 // SSL suele ser necesario en algunos VPS, pero por ahora lo dejamos opcional
                 // ssl: { rejectUnauthorized: false }
             });

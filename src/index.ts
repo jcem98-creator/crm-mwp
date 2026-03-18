@@ -24,12 +24,20 @@ async function main() {
         validateConfig();
         console.log("[App] Configuración validada.");
         
-        // Inicializar base de datos
+        // Inicializar base de datos con timeout para evitar cuelgues infinitos
+        console.log("[App] Intentando conectar a PostgreSQL en:", config.PGHOST);
+        const dbInitTimeout = setTimeout(() => {
+            console.error("❌ LA BASE DE DATOS ESTÁ TARDANDO DEMASIADO. Revisa la conectividad del host:", config.PGHOST);
+        }, 10000);
+
         await memoryDb.initialize();
+        clearTimeout(dbInitTimeout);
         console.log("[App] Base de datos inicializada.");
     } catch (error: any) {
-        console.error("[App] Error de configuración:", error.message);
-        process.exit(1);
+        console.error("❌ ERROR CRÍTICO AL INICIAR:", error.message);
+        console.log("Sugerencia: Revisa si el host de Postgres es alcanzable desde este entorno.");
+        // No salimos con 1 para permitir que al menos el servidor Express suba y podamos ver logs si hay un panel
+        // process.exit(1); 
     }
 
     const app = express();
@@ -94,8 +102,10 @@ async function main() {
         console.log(`[WhatsApp] Mensaje de ${cleanNumber} (fromMe: ${fromMe}): ${text}`);
 
         // Números de administradores autorizados para comandos globales
-        const ADMIN_NUMBERS = ["51992371285"];
+        const ADMIN_NUMBERS = ["51992371285", "13107041147"]; // Añadido el número del screenshot como admin
         const isAdmin = ADMIN_NUMBERS.includes(cleanNumber);
+
+        console.log(`[WhatsApp] Webhook Recibido: Chat=${cleanNumber} | Admin=${isAdmin} | DeMi=${fromMe} | Texto="${text}"`);
 
         // --- COMANDOS DE ADMIN (desde número admin, no fromMe) ---
         if (!fromMe && isAdmin) {
