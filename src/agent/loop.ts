@@ -189,27 +189,28 @@ Nuestro horario de atención es de lunes a viernes de 10:00 am a 7:00 pm y sába
         if (extractedData.intencion_principal === 'ubicacion') {
             systemAlert += " AVISO: El cliente pregunta la dirección. Responde EXACTAMENTE en 3 líneas (sin texto adicional): 1) 'Nuestra dirección es 10918 Main St Ste B, El Monte CA 91731.' 2) 'Aquí te dejo el pin de ubicación:' 3) 'Si necesitas algo más, ¡solo dímelo!'.";
         }
-        // Si pide fotos o videos
-        if (extractedData.pide_fotos) systemAlert += " AVISO: El cliente quiere ver fotos. NO escribas '(envío las fotos)' ni menciones que las enviarás; el sistema las enviará automáticamente después de tu mensaje.";
-        if (extractedData.pide_videos) systemAlert += " AVISO: El cliente quiere ver un video. NO escribas '(envío el video)' ni menciones que lo enviarás; el sistema lo enviará automáticamente después de tu mensaje.";
+        
+        // Verificamos si ya hubo mensajes del asistente para no repetir saludo
+        const userMsgCount = history.filter(m => m.role === "user").length;
+        const assistantMsgCount = history.filter(m => m.role === "assistant").length;
+        const hasGreeted = assistantMsgCount > 0 || userMsgCount > 1;
 
-        // Acuse de recibo de documentos/fotos (heurística basada en texto del historial)
-        const userTextHistory = history.filter(m => m.role === "user").map(m => m.content || "").join("\n").toLowerCase();
-        const assistantTextHistory = history.filter(m => m.role === "assistant").map(m => m.content || "").join("\n").toLowerCase();
-        const mediaHints = /(adjunt|adjunto|anex|anexo|te envi[eé]|ya te mand[eé]|envi[eé] (la|el|los|las)|foto|fotos|imagen|imágenes|documento|documentos|archivo|comprobante|recibo|licencia|passport|pasaporte|id|identificaci[oó]n|birth certificate|acta)/;
-        const shouldAcknowledgeMedia = mediaHints.test(userTextHistory) && !/(ya recib[ií]|recib[ií] tus|recib[ií] tu|received your|i got your)/.test(assistantTextHistory);
-        if (shouldAcknowledgeMedia) {
-            systemAlert += " AVISO: En el historial el cliente parece haber enviado documentos/fotos. Haz un acuse de recibo breve y empático: '¡Perfecto! Ya recibí tus documentos/fotos. Un asesor humano los revisará pronto para continuar.'";
+        // Si pide fotos o videos (Agregamos saludo forzado si es necesario)
+        if (extractedData.pide_fotos || extractedData.pide_videos) {
+            if (!hasGreeted) {
+                // Si es lo primero que pide, forzamos la identidad
+                systemAlert += " REGLA DE ORO: Preséntate como 'Cynthia, Agente IA de My Wedding Palace' antes de confirmar el envío de archivos.";
+            }
+            if (extractedData.pide_fotos) systemAlert += " AVISO: El cliente quiere ver fotos. Responde: 'Sí, tenemos fotos de nuestras ceremonias. Te las enviaré automáticamente después de este mensaje.' (Asegúrate de escribir 'ceremonias' correctamente).";
+            if (extractedData.pide_videos) systemAlert += " AVISO: El cliente quiere ver un video. Responde: 'Claro, aquí tienes un video de nuestras instalaciones. Se enviará automáticamente después de este mensaje.'";
         }
+
+        // --- ELIMINADO: Acuse de recibo de documentos (causaba falsos positivos con screenshots) ---
 
 
         // ==========================================
         // CAPA 3: GENERACIÓN DE RESPUESTA LINGÜÍSTICA
         // ==========================================
-        // Verificamos si ya hubo mensajes del asistente para no repetir saludo
-        const userMsgCount = history.filter(m => m.role === "user").length;
-        const assistantMsgCount = history.filter(m => m.role === "assistant").length;
-        const hasGreeted = assistantMsgCount > 0 || userMsgCount > 1;
         const msgTrim = initialMessage.trim();
         const msgLowerTrim = msgTrim.toLowerCase();
         const isShortGreeting = msgTrim.length <= 18 && /^(hola+|holi+|buen(as|os)\s+d[ií]as|buen(as|os)\s+tardes|buen(as|os)\s+noches|hello+|hi+|hey+)$/.test(msgLowerTrim.replace(/[!.?]/g, "").trim());
