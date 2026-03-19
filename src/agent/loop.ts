@@ -173,8 +173,8 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
         // 1. Preparar Prompt con Conocimiento
         const currentPrompt = MASTER_PROMPT.replace("{{KNOWLEDGE_BASE}}", knowledgeBase);
 
-        // 2. Detectar idioma del mensaje actual por código
-        const isEnglishMsg = /(hello|hi |hey |what |how |do you|can you|i want|i need|i'm |the |is |are |we |my |simple wedding|elegant|wedding at home|package|price|book|reserve|visit|call|contact|advisor|deposit|document|located|where|when|photo|video|chapel|wedding|ceremony|married|minister|office|show|see|place|pics|pictures|image|address|provide|rentals|cakes|big |fit |can we|have a|does it|it include|at home|your |you |much|need)/i.test(initialMessage);
+        // 2. Detectar idioma del mensaje actual por código (frases claramente inglesas, sin palabras que existen en español)
+        const isEnglishMsg = /(hello|hi there|hey there|how much|how do|how can|do you|can you|can i |i want|i need|i would|i'd like|i'm looking|i'm interested|we are|we're |does it|is it |are you|could you|would you|please |thank|thanks|sure!|okay|of course|wedding at home|simple wedding|elegant chapel|at home|package|booking|book a|show me|see photos|see the|let me|included|available|requirements|bring my|own minister|same.sex|tuxedo|documents do|what does|what is|what's |what are|photos of|pictures of|do i need)/i.test(initialMessage);
 
         // 3. Generar respuesta con el LLM + instrucción de idioma forzada
         console.log(`[Agent] 🧠 Razonando respuesta... (idioma detectado: ${isEnglishMsg ? "EN" : "ES"})`);
