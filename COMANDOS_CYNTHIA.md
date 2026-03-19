@@ -1,6 +1,6 @@
 # 🤖 COMANDOS DE MWP AI - My Wedding Palace
 
-## 📱 COMANDOS DESDE TU CELULAR ADMIN (+51992371285)
+## 📱 COMANDOS DESDE EL CELULAR ADMIN (+15623823077)
 *Escríbele al número de la empresa desde tu celular personal*
 
 | Comando | Qué hace |
@@ -49,10 +49,10 @@ git add -A && git commit -m "actualizar info" && git push
 2. Guarda y sube con el mismo comando de arriba
 
 ### Agregar un nuevo número admin:
-1. Abre `src/index.ts`
-2. Busca `ADMIN_NUMBERS`
-3. Agrega el número: `["51992371285", "NUEVO_NUMERO"]`
-4. Sube los cambios
+1. Entra a tu panel de control de **AgenteAI MWP**.
+2. Busca la variable `ADMIN_NUMBERS`.
+3. Agrega el nuevo número separado por coma: `15623823077, OTRO_NUMERO`.
+4. El servidor se reiniciará automáticamente y listo. ✅
 
 ---
 
