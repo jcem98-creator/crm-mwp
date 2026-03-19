@@ -173,11 +173,19 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
         // 1. Preparar Prompt con Conocimiento
         const currentPrompt = MASTER_PROMPT.replace("{{KNOWLEDGE_BASE}}", knowledgeBase);
 
-        // 2. Generar respuesta con el LLM
-        console.log("[Agent] 🧠 Razonando respuesta...");
+        // 2. Detectar idioma del mensaje actual por código
+        const isEnglishMsg = /(hello|hi |hey |what |how |do you|can you|i want|i need|i'm |the |is |are |we |my |simple wedding|elegant|wedding at home|package|price|book|reserve|visit|call|contact|advisor|deposit|document|located|where|when|photo|video|chapel|wedding|ceremony|married|minister|office|show|see|place|pics|pictures|image|address|provide|rentals|cakes|big |fit |can we|have a|does it|it include|at home|your |you |much|need)/i.test(initialMessage);
+
+        // 3. Generar respuesta con el LLM + instrucción de idioma forzada
+        console.log(`[Agent] 🧠 Razonando respuesta... (idioma detectado: ${isEnglishMsg ? "EN" : "ES"})`);
+        const langEnforcement = isEnglishMsg
+            ? "⚠️ MANDATORY: The client wrote in ENGLISH. You MUST respond ENTIRELY in English. Use ONLY the ENGLISH VERSION section of the knowledge base. Do NOT include ANY Spanish word in your response. All lists, prices, descriptions, and closing questions MUST be in English."
+            : "⚠️ OBLIGATORIO: El cliente escribió en ESPAÑOL. Responde completamente en español usando la sección en español de la base de conocimiento.";
+
         const response = await generateResponse([
             { role: "system", content: currentPrompt },
-            ...history.slice(-8).map(m => ({ role: m.role as any, content: m.content }))
+            ...history.slice(-8).map(m => ({ role: m.role as any, content: m.content })),
+            { role: "system", content: langEnforcement }
         ]);
 
         let responseContent = response.content || "";
