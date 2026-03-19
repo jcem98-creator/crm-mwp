@@ -103,7 +103,7 @@ async function main() {
         console.log(`[WhatsApp] Mensaje de ${cleanNumber} (fromMe: ${fromMe}): ${text}`);
 
         // Números de administradores autorizados para comandos globales
-        const ADMIN_NUMBERS = ["51992371285", "13107041147"]; // Añadido el número del screenshot como admin
+        const ADMIN_NUMBERS = config.ADMIN_NUMBERS;
         const isAdmin = ADMIN_NUMBERS.includes(cleanNumber);
 
         console.log(`[WhatsApp] Webhook Recibido: Chat=${cleanNumber} | Admin=${isAdmin} | DeMi=${fromMe} | Texto="${text}"`);
@@ -182,7 +182,7 @@ async function main() {
             // El bot está pausado (un humano está o debe estar atendiendo), 
             // pero el cliente sigue escribiendo. Enviamos la alerta al grupo.
             const cleanNum = remoteJid.split("@")[0];
-            const GRUPO_ALERTAS = "120363425164097782@g.us";
+            const GRUPO_ALERTAS = config.GRUPO_ALERTAS_JID;
             
             // Limitamos alertas a 1 por minuto por chat para no spamear el grupo si mandan muchos mensajitos cortos
             const now = Date.now();

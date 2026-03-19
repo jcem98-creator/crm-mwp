@@ -1,4 +1,5 @@
 import { LLMMessage, generateResponse } from "../llm/index.js";
+import { config } from "../config.js";
 import { memoryDb } from "../db/index.js";
 import { sendText, sendPresence, sendMedia, sendLocation } from "../whatsapp.js";
 import fs from "fs";
@@ -296,7 +297,7 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
             // 6. Alerta al grupo si hubo pase a humano
             if (needsHandoff) {
                 console.log(`[Agent] 🚨 Pase a humano detectado para ${chatId}`);
-                const GRUPO_ALERTAS = "120363425164097782@g.us";
+                const GRUPO_ALERTAS = config.GRUPO_ALERTAS_JID;
                 const cleanNum = chatId.split("@")[0];
                 try {
                     await sendText(

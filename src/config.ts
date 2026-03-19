@@ -14,6 +14,8 @@ export const config = {
     PGUSER: process.env.PGUSER,
     PGPASSWORD: process.env.PGPASSWORD,
     PGDATABASE: process.env.PGDATABASE,
+    ADMIN_NUMBERS: process.env.ADMIN_NUMBERS ? process.env.ADMIN_NUMBERS.split(",").map(n => n.trim().replace(/\D/g, "")) : [],
+    GRUPO_ALERTAS_JID: process.env.GRUPO_ALERTAS_JID || "120363425164097782@g.us", // Valor por defecto anterior
 };
 
 export function validateConfig() {
