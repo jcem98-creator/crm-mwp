@@ -25,13 +25,17 @@ const MASTER_PROMPT = `Eres Cynthia, la Agente IA de My Wedding Palace. Eres ama
 ================================================================
                      IDIOMA — REGLA ABSOLUTA
 ================================================================
-Detecta el idioma del cliente desde su PRIMER mensaje y úsalo en TODA tu respuesta.
-- Si el cliente escribió en INGLÉS (aunque sea una sola palabra o frase en inglés):
-  Responde TODO en inglés — precios, listas, preguntas, cierre — absolutamente todo.
-- Si el cliente escribió en ESPAÑOL: responde todo en español.
+Detecta el idioma del ÚLTIMO mensaje del cliente y responde COMPLETAMENTE en ese idioma.
+- Si el último mensaje está en INGLÉS → TODA tu respuesta DEBE ser en inglés.
+- Si el último mensaje está en ESPAÑOL → TODA tu respuesta DEBE ser en español.
+- Si el mensaje es ambiguo ("yes", "ok", "no", emojis) → usa el mismo idioma de TU respuesta anterior.
 - NUNCA mezcles español e inglés en un mismo mensaje.
-- En inglés: "Simple Wedding", "Elegant Chapel Wedding", "Wedding at Home"
-- En español: "Boda Sencilla", "Boda en Capilla Elegante", "Boda a Domicilio"
+- CRÍTICO: La base de conocimiento está en español. Cuando respondas en INGLÉS,
+  TRADUCE absolutamente TODO al inglés: listas, precios, requisitos, descripciones.
+  NUNCA copies texto en español dentro de una respuesta en inglés.
+- Paquetes en inglés: "Simple Wedding", "Elegant Chapel Wedding", "Wedding at Home"
+- Paquetes en español: "Boda Sencilla", "Boda en Capilla Elegante", "Boda a Domicilio"
+- Listas de lo que incluye, requisitos, horarios → TODO traducido al idioma del cliente.
 
 ================================================================
                    PRINCIPIO FUNDAMENTAL
@@ -39,6 +43,9 @@ Detecta el idioma del cliente desde su PRIMER mensaje y úsalo en TODA tu respue
 Solo respondes con información de tu BASE DE CONOCIMIENTO.
 Si algo no está en ella, dilo honestamente y ofrece conectar al cliente con un asesor.
 NUNCA inventes precios, horarios, disponibilidad ni información que no esté en la base.
+DEPÓSITO: NUNCA reveles el monto del depósito. Si preguntan sobre depósito, adelanto,
+enganche, down payment o initial deposit, responde que un asesor les dará esa información
+y usa [PASE_HUMANO]. No des el número bajo ninguna circunstancia.
 
 ================================================================
               ESTILO DE CONVERSACIÓN — REGLA CRÍTICA
@@ -53,12 +60,14 @@ Una cosa a la vez:
 
 OBJETIVO FINAL — CTA HACIA EL ASESOR:
 Tu meta es que el cliente llegue a hablar con un asesor humano para cerrar la cita.
-Al final de CADA respuesta informativa haz una pregunta natural que avance la conversación:
-  "¿Tienes alguna fecha en mente para tu boda? 😊"
-  "¿Te gustaría que un asesor te contacte para coordinar los detalles?"
-  "¿Quieres saber qué incluye este paquete?"
-  "¿Te gustaría agendar una visita a nuestras instalaciones?"
-Adáptala al contexto. No la repitas igual en cada mensaje.
+Al final de CADA respuesta informativa haz UNA pregunta natural en el IDIOMA DEL CLIENTE:
+  ESPAÑOL: "¿Tienes alguna fecha en mente para tu boda? 😊"
+  ENGLISH: "Do you have a date in mind for your wedding? 😊"
+  ESPAÑOL: "¿Te gustaría que un asesor te contacte para coordinar los detalles?"
+  ENGLISH: "Would you like an advisor to contact you to coordinate the details?"
+  ESPAÑOL: "¿Quieres saber qué incluye este paquete?"
+  ENGLISH: "Would you like to know what this package includes?"
+REGLA: Elige SOLO UNA del idioma correcto. NUNCA uses la versión en español si el cliente habla inglés.
 
 ================================================================
                    IDENTIDAD Y PRESENTACIÓN
@@ -120,20 +129,22 @@ CASO ESPECIAL — FECHA ESPECÍFICA SIN INTENCIÓN CLARA:
 ================================================================
                     ENVÍO DE MULTIMEDIA [TAGS]
 ================================================================
-Incluye estos tags al FINAL de tu respuesta cuando aplique. Son invisibles para el cliente.
-El sistema los procesa y envía los archivos automáticamente.
+Incluye estos tags al FINAL de tu respuesta SOLO cuando correspondan. Son invisibles para el cliente.
 
-[SEND_PHOTOS]          → SOLO cuando pido ver fotos: "manden fotos", "quiero ver la capilla", "foto del lugar".
+[SEND_PHOTOS]          → Cuando el cliente pide ver FOTOS, IMÁGENES o "the place/el lugar".
+                         "show me the place" = [SEND_PHOTOS], NO [SEND_VIDEO].
                          NO usar cuando pregunten qué incluye, precios o disponibilidad.
+                         Si dicen "don't send photos" o "no envíes fotos" → NO usar este tag.
 
-[SEND_VIDEO]           → SOLO cuando el cliente EXPLICITAMENTE pide un video o recorrido.
-                         NUNCA lo uses si preguntaron fotos, precios o qué incluye.
-                         Si los piden: "Aquí te mando el video de nuestras instalaciones 🎥"
-[SEND_LOCATION]        → cuando pregunten dirección, cómo llegar, mapa, pin, Google Maps o Waze.
-                         SIEMPRE junto con la dirección, sin preguntar permiso.
-                         Di: "Nuestra dirección es 10918 Main St Ste B, El Monte CA 91731. Te mando el pin 📍"
+[SEND_VIDEO]           → SOLO cuando el cliente dice LITERALMENTE "video", "recorrido" o "tour".
+                         NUNCA lo uses para "show me the place", "photos", "fotos" o similares.
 
-REGLA: Solo usa el tag que corresponde exactamente a lo que pidieron.
+[SEND_LOCATION]        → Cuando pregunten dirección, cómo llegar, mapa, pin, ubicación.
+
+REGLAS:
+- Usa SOLO el tag que corresponde. NO combines [SEND_PHOTOS] y [SEND_VIDEO].
+- NUNCA escribas sintaxis de imagen markdown como ![Foto...] o ![Photo...] en tu texto.
+  El sistema envía los archivos automáticamente; tú solo escribe texto normal.
 
 ================================================================
                      FORMATO DE RESPUESTA
@@ -143,6 +154,8 @@ REGLA: Solo usa el tag que corresponde exactamente a lo que pidieron.
 - Usa "---" SOLO cuando necesites separar dos temas claramente distintos en el mismo mensaje.
 - NO fragmentes artificialmente una idea en dos burbujas si cabe en una sola.
 - No repitas información que ya diste en el historial.
+- NUNCA uses sintaxis markdown de imágenes (![...]) ni listas numeradas de fotos.
+  El sistema envía las fotos automáticamente. Solo escribe texto conversacional.
 
 === BASE DE CONOCIMIENTO ===
 {{KNOWLEDGE_BASE}}`;
@@ -183,13 +196,13 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
 
         // Capa 3: la IA escribió el texto de pase aunque olvidó el tag
         // (el prompt le dice exactamente qué escribir → detectamos eso)
-        const aiResponseHandoff = /(asesor te contactar|advisor will reach out|asesor te contact|un asesor se comunicar)/i.test(responseNorm);
+        const aiResponseHandoff = /(asesor te contactara por whatsapp|advisor will reach out to you via)/i.test(responseNorm);
 
         const needsHandoff = userTriggersHandoff || aiTriggeredHandoff || aiResponseHandoff;
 
         // Si el usuario disparó el handoff pero la IA no usó el mensaje estándar,
         // reemplazar la respuesta con el texto correcto
-        const isSpanish = !/(hello|hi |what |how |do you|can you|i want|i need|simple wedding|elegant|wedding at home|package|price)/i.test(initialMessage);
+        const isSpanish = !/(hello|hi |hey |what |how |do you|can you|i want|i need|i'm |simple wedding|elegant|wedding at home|package|price|book|reserve|visit|call me|contact|advisor|deposit|document|located|where |when |photo|video|chapel|wedding|ceremony|married|minister|office|show|see|place|pics|pictures|image|address)/i.test(initialMessage);
         if (userTriggersHandoff && !aiTriggeredHandoff && !aiResponseHandoff) {
             responseContent = isSpanish
                 ? "¡Perfecto! Un asesor te contactará por WhatsApp o llamada lo antes posible.\nNuestro horario de atención es lunes a viernes de 10 am a 7 pm y sábados de 10 am a 5 pm. 😊"
@@ -201,13 +214,16 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
         // Capa 2: tag explícito de la IA
         // Capa 3: keywords en la respuesta de la IA (fallback)
 
-        // FOTOS capilla: cuando piden ver fotos explícitamente
-        const userWantsToSee = /(foto|photo|image|picture|imagenes|ver|show)/i.test(userNorm);
-        const sendPhotos = userWantsToSee || responseContent.includes("[SEND_PHOTOS]");
+        // FOTOS: keywords explícitos + pedidos visuales (con negación)
+        const hasPhotoKeyword = /(foto|photo|image|picture|imagenes|pics)/i.test(userNorm);
+        const hasVisualRequest = /(show\s*me|ense[ñn]ame|muestrame|quiero\s*ver|let\s*me\s*see|can\s*i\s*see|puedo\s*ver)/i.test(userNorm);
+        const hasVideoKeyword = /(video|recorrido|tour)/i.test(userNorm);
+        const hasPhotoNegation = /(no.*(foto|photo|envie|send|mand)|don'?t\s+send|sin\s+foto|without\s+photo)/i.test(userNorm);
+        const userWantsPhotos = (hasPhotoKeyword || (hasVisualRequest && !hasVideoKeyword)) && !hasPhotoNegation;
+        const sendPhotos = (userWantsPhotos || responseContent.includes("[SEND_PHOTOS]")) && !hasPhotoNegation;
 
-        // VIDEO: SOLO desde mensaje del usuario o AI tag — sin fallback de respuesta (causa falsos positivos)
-        const userWantsVideo = /(video|recorrido|tour)/i.test(userNorm);
-        const sendVideo = userWantsVideo || responseContent.includes("[SEND_VIDEO]");
+        // VIDEO: SOLO keywords explícitos o AI tag (protegido contra conflicto con fotos)
+        const sendVideo = hasVideoKeyword || (responseContent.includes("[SEND_VIDEO]") && !userWantsPhotos && !hasVisualRequest);
 
         // PIN de ubicación: usuario pregunta por dirección/mapa/ubicación
         const userWantsLocation = /(direccion|address|ubicacion|donde|mapa|map|pin|google maps|waze|como llegar|how to get)/i.test(userNorm);
@@ -215,13 +231,16 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
             || responseContent.includes("[SEND_LOCATION]")
             || /(10918 main st|te mando el pin|sending the pin|aqui el pin)/i.test(responseNorm);
 
-        // Limpiar todos los tags del texto visible
+        // Limpiar todos los tags y markdown de imágenes del texto visible
         responseContent = responseContent
             .replace(/\[PASE_HUMANO\]/g, "")
             .replace(/\[SEND_PHOTOS\]/g, "")
-
             .replace(/\[SEND_VIDEO\]/g, "")
             .replace(/\[SEND_LOCATION\]/g, "")
+            .replace(/!\[[^\]]*\]\([^)]*\)/g, "")  // eliminar ![alt](url)
+            .replace(/!\[[^\]]*\]/g, "")             // eliminar ![alt] sueltos
+            .replace(/^\s*\d+\.\s*$/gm, "")          // eliminar líneas "1." vacías
+            .replace(/\n{3,}/g, "\n\n")              // colapsar saltos excesivos
             .trim();
 
         if (responseContent) {
