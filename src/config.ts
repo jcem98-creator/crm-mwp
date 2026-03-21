@@ -15,7 +15,7 @@ export const config = {
     PGPASSWORD: process.env.PGPASSWORD,
     PGDATABASE: process.env.PGDATABASE,
     ADMIN_NUMBERS: process.env.ADMIN_NUMBERS ? process.env.ADMIN_NUMBERS.split(",").map(n => n.trim().replace(/\D/g, "")) : [],
-    GRUPO_ALERTAS_JID: process.env.GRUPO_ALERTAS_JID || "120363425164097782@g.us", // Valor por defecto anterior
+    GRUPO_ALERTAS_JID: process.env.GRUPO_ALERTAS_JID || "120363407557875170@g.us", // My Wedding Palace Mensajes
 };
 
 export function validateConfig() {
