@@ -47,7 +47,8 @@ export class PostgresMemoryDB {
                         package_interest TEXT,
                         desired_date TEXT,
                         status TEXT DEFAULT 'nuevo',
-                        paid_amount REAL DEFAULT 0
+                        paid_amount REAL DEFAULT 0,
+                        notes TEXT
                     );
                 `);
 
@@ -75,10 +76,11 @@ export class PostgresMemoryDB {
         package?: string,
         date?: string,
         status?: string,
-        amount?: number
+        amount?: number,
+        notes?: string
     }): Promise<void> {
         await this.initialize();
-        const { last_bot_at, needs_followup, reset_count, increment_count, name, package: pkg, date, status, amount } = update;
+        const { last_bot_at, needs_followup, reset_count, increment_count, name, package: pkg, date, status, amount, notes } = update;
         
         // Upsert lead status (PostgreSQL syntax)
         await this.pool!.query(
@@ -112,6 +114,9 @@ export class PostgresMemoryDB {
         }
         if (amount !== undefined) {
             await this.pool!.query(`UPDATE leads_status SET paid_amount = $1 WHERE chat_id = $2`, [amount, String(chatId)]);
+        }
+        if (notes !== undefined) {
+            await this.pool!.query(`UPDATE leads_status SET notes = $1 WHERE chat_id = $2`, [notes, String(chatId)]);
         }
     }
 
