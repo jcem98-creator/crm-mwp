@@ -255,8 +255,21 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
             .replace(/!\[[^\]]*\]\([^)]*\)/g, "")  // eliminar ![alt](url)
             .replace(/!\[[^\]]*\]/g, "")             // eliminar ![alt] sueltos
             .replace(/^\s*\d+\.\s*$/gm, "")          // eliminar líneas "1." vacías
-            .replace(/\n{3,}/g, "\n\n")              // colapsar saltos excesivos
             .trim();
+
+        // 🛡 HOTFIX DE PRODUCCIÓN: Eliminar cualquier frase de precio si preguntan por inclusiones pero NO por precio
+        const userAsksIncludes = /(que incluye|que trae|what does.*include|what is included|what's included|benefits|beneficios|promotions|promociones|gifts|regalos)/i.test(userNorm);
+        const userAsksPrice = /(precio|costo|cuanto|price|cost|how much)/i.test(userNorm);
+        
+        if (userAsksIncludes && !userAsksPrice) {
+            // Elimina oraciones sueltas completas que mencionen precios con signo de dólar (ej: "El precio es $595.")
+            responseContent = responseContent.replace(/[^\n]*(?:precio|cuesta|costo|price|cost).*\$\d+[^\n]*\n?/gi, "");
+            // Elimina otras menciones de precios que pudieran quedar sueltas
+            responseContent = responseContent.replace(/[^\n]*\$\d+[^\n]*\n?/g, "");
+            responseContent = responseContent.replace(/\n{3,}/g, "\n\n").trim();
+        } else {
+            responseContent = responseContent.replace(/\n{3,}/g, "\n\n").trim();
+        }
 
         if (responseContent) {
             // Guardar respuesta en memoria
