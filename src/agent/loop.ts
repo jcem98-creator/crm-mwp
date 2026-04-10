@@ -9,6 +9,13 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// ─────────────────────────────────────────────────────────────────────────────
+// v2 — Incorpora Sorteo "Boda Gratis" (Mayo)
+// Cambios respecto a la versión anterior:
+//   1. MASTER_PROMPT: nueva sección "SORTEO BODA GRATIS" (no toca la lógica existente)
+//   2. Añade keywords de promo y detalle de premio al detector de handoff
+// ─────────────────────────────────────────────────────────────────────────────
+
 // Cargar conocimiento de My Wedding Palace
 const KNOWLEDGE_PATH = path.join(__dirname, "..", "knowledge.txt");
 let knowledgeBase = "";
@@ -114,6 +121,12 @@ al FINAL de tu respuesta. Aplica para:
   ► SERVICIOS LEGALES (Green Card, Ciudadanía, Peticiones, Huellas):
     Aplica pase sin dar precios ni detalles.
 
+  ► DETALLES NO CONFIRMADOS DEL SORTEO:
+    Si el cliente pregunta detalles del sorteo que NO están en tu base de conocimiento
+    (cómo se elige al ganador, requisitos extra, forma de notificación, etc.),
+    usa [PASE_HUMANO] y di que un asesor le dará esa información.
+    NUNCA inventes ni supongas detalles del sorteo que no están confirmados.
+
 REGLA DE ORO — RESPUESTA ESTÁNDAR PARA TODOS LOS PASES:
   No preguntes confirmación. No coordines tú. No pidas fecha ni hora.
   El asesor humano hace eso. Tú solo informa y cede el control.
@@ -132,6 +145,51 @@ CASO ESPECIAL — FECHA ESPECÍFICA SIN INTENCIÓN CLARA:
   2. Pregunta: "¿Te gustaría que un asesor te contacte para confirmar esa fecha? 😊"
   3. Si dice SÍ → incluye [PASE_HUMANO] con el texto estándar arriba.
   Si menciona fecha + intención de reservar → pase inmediato directo.
+
+================================================================
+     SORTEO "BODA GRATIS" — REGLAS DE RESPUESTA
+================================================================
+ATENCIÓN: Esta sección es completamente INDEPENDIENTE del beneficio operativo
+de la fotografía impresa 10x8 cm de viernes/sábado. Son dos cosas distintas.
+NUNCA las mezcles ni las menciones juntas como si fueran la misma promo.
+
+CUÁNDO MENCIONAR EL SORTEO:
+- Solo cuando el cliente pregunte explícitamente por promociones, sorteo,
+  boda gratis, regalo, participar, Día de la Madre, o reserve/boda antes del 10 de mayo.
+- NO lo menciones proactivamente en el saludo inicial ni en respuestas puramente
+  informativas sobre precios o paquetes, salvo que el cliente lo pregunte.
+
+QUÉ PUEDES RESPONDER:
+- Participan quienes RESERVEN su boda a más tardar el 10 de mayo (el 10 sí cuenta).
+- Participan quienes SE CASEN a más tardar el 10 de mayo (el 10 sí cuenta).
+- Si reservaron a tiempo pero la boda es después del 10, igual participan.
+- Si se casan a tiempo pero reservaron después del 10, igual participan.
+- Aplica a CUALQUIER paquete.
+- El sorteo es el 11 de mayo.
+- Una pareja gana una boda gratis.
+
+QUÉ NO PUEDES RESPONDER (deriva con [PASE_HUMANO]):
+- Cómo se elige al ganador.
+- Restricciones adicionales no mencionadas arriba.
+- Cómo se notifica al ganador.
+- Cualquier detalle no confirmado en esta base de conocimiento.
+
+IMPORTANTE: Si un cliente pregunta "Is the free wedding really free?", "¿La boda gratis es
+completamente gratis?", "¿Qué cubre exactamente la boda gratis?", "What does the prize include?"
+o cualquier variante que pida detalles del contenido del premio:
+1. Confirma brevemente que sí, una pareja gana una boda gratis.
+2. OBLIGATORIO: incluye [PASE_HUMANO] al final para que el asesor dé los detalles exactos.
+Estás ante una pregunta de detalle del premio — NO sobre un tipo de ceremonia diferente.
+
+EJEMPLO DE RESPUESTA CORRECTA (español):
+  "¡Tenemos una promo especial! 🎉 Las parejas que reserven o se casen a más tardar el 10 de mayo
+  participan automáticamente en el sorteo de una boda gratis. El sorteo es el 11 de mayo
+  y aplica con cualquier paquete. ¿Ya tienes una fecha en mente? 😊"
+
+EJEMPLO DE RESPUESTA CORRECTA (inglés):
+  "We have a special promotion! 🎉 Couples who book or get married on or before May 10th are automatically
+  entered in a giveaway for a free wedding. The drawing is on May 11th and it applies
+  to any package. Do you have a date in mind? 😊"
 
 ================================================================
                     ENVÍO DE MULTIMEDIA [TAGS]
@@ -203,7 +261,9 @@ export async function runAgentLoop(chatId: string, initialMessage: string) {
 
         // PASE A HUMANO — Detección en 3 capas:
         // Capa 1: mensaje del usuario (keywords amplio ES+EN — una sola línea, JS no soporta flag x)
-        const handoffUserKeywords = /(puedo\s*ir|quiero\s*ir|puedo\s*caer|visitar|quiero\s*conocer|me\s*pueden\s*llamar|pueden\s*llamarme|llamarme|marcame|llavenme|echenme|fonazo|denme\s*un|quiero\s*reservar|quiero\s*apartar|como\s*reservo|como\s*aparto|hacer\s*la\s*reserva|separar\s*la\s*fecha|apartar\s*la\s*fecha|dar\s*el\s*adelanto|dar\s*el\s*deposito|dar\s*enganche|contactame|contactenme|con\s*un\s*asesor|quiero\s*hablar|necesito\s*hablar|quiero\s*que\s*me\s*llamen|quiero\s*que\s*me\s*contacten|me\s*contactan|pasame|comuniquense|comunicarse\s*conmigo|ponerse\s*en\s*contacto|hablar\s*con\s*alguien|hablar\s*con\s*un\s*asesor|green\s*card|ciudadania|peticion\s*familiar|huellas|live\s*scan|call\s*me|contact\s*me|reach\s*out|speak\s*with|talk\s*to\s*someone|talk\s*to\s*an\s*advisor|can\s*i\s*visit|i\s*want\s*to\s*visit|can\s*i\s*go|how\s*do\s*i\s*book|how\s*do\s*i\s*reserve|want\s*to\s*book|want\s*to\s*reserve|i\s*want\s*to\s*book|i\s*want\s*to\s*reserve|i\s*want\s*to\s*come|citizenship|immigration)/i;
+        // [v2] Se agregan keywords de sorteo/promo para derivar cuando piden detalles no confirmados
+        // [v2.1] Se agregan keywords de detalle del premio: "qué cubre", "qué incluye la boda gratis", etc.
+        const handoffUserKeywords = /(puedo\s*ir|quiero\s*ir|puedo\s*caer|visitar|quiero\s*conocer|me\s*pueden\s*llamar|pueden\s*llamarme|llamarme|marcame|llavenme|echenme|fonazo|denme\s*un|quiero\s*reservar|quiero\s*apartar|como\s*reservo|como\s*aparto|hacer\s*la\s*reserva|separar\s*la\s*fecha|apartar\s*la\s*fecha|dar\s*el\s*adelanto|dar\s*el\s*deposito|dar\s*enganche|contactame|contactenme|con\s*un\s*asesor|quiero\s*hablar|necesito\s*hablar|quiero\s*que\s*me\s*llamen|quiero\s*que\s*me\s*contacten|me\s*contactan|pasame|comuniquense|comunicarse\s*conmigo|ponerse\s*en\s*contacto|hablar\s*con\s*alguien|hablar\s*con\s*un\s*asesor|green\s*card|ciudadania|peticion\s*familiar|huellas|live\s*scan|call\s*me|contact\s*me|reach\s*out|speak\s*with|talk\s*to\s*someone|talk\s*to\s*an\s*advisor|can\s*i\s*visit|i\s*want\s*to\s*visit|can\s*i\s*go|how\s*do\s*i\s*book|how\s*do\s*i\s*reserve|want\s*to\s*book|want\s*to\s*reserve|i\s*want\s*to\s*book|i\s*want\s*to\s*reserve|i\s*want\s*to\s*come|citizenship|immigration|como\s*se\s*elige|como\s*notifican|como\s*saben\s*quien\s*gana|que\s*requisitos\s*tiene\s*el\s*sorteo|how\s*is\s*the\s*winner|how\s*do\s*you\s*notify|winner\s*requirements|que\s*cubre.*boda|que\s*incluye.*boda\s*gratis|que\s*incluye.*premio|en\s*que\s*consiste.*premio|que\s*consiste.*boda\s*gratis|completamente\s*gratis|gratis\s*de\s*verdad|que\s*gana.*exactamente|que\s*abarca.*boda|what.*free\s*wedding.*cover|what.*prize.*cover|what.*prize.*include|what.*giveaway.*cover|what.*giveaway.*include|what.*free.*wedding.*include|really\s*free|free.*wedding.*really|what\s*does.*free.*include|what\s*exactly.*prize|what\s*exactly.*free\s*wedding)/i;
         const userTriggersHandoff = handoffUserKeywords.test(userNorm);
 
         // Capa 2: tag explícito de la IA
