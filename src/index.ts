@@ -252,15 +252,36 @@ async function main() {
     });
 
     app.post("/api/leads/update-status", async (req, res) => {
-        const { chatId, status, name, date, amount } = req.body;
-        if (!chatId) {
-            return res.status(400).json({ error: "chatId es requerido" });
-        }
+        const { chatId, status, name, date, amount, notes } = req.body;
+        if (!chatId) return res.status(400).json({ error: "chatId es requerido" });
+
         try {
-            await memoryDb.updateLeadStatus(chatId, { status, name, date, amount });
+            await memoryDb.updateLeadStatus(chatId, { status, name, date, amount, notes });
             res.json({ success: true });
         } catch (error) {
             res.status(500).json({ error: "Error al actualizar lead" });
+        }
+    });
+
+    app.post("/api/leads/:chatId/notes", async (req, res) => {
+        const { notes } = req.body;
+        try {
+            await memoryDb.updateLeadStatus(req.params.chatId, { notes });
+            res.json({ success: true });
+        } catch (error) {
+            res.status(500).json({ error: "Error updating notes" });
+        }
+    });
+
+    app.post("/api/leads/create", async (req, res) => {
+        const { chatId, name, package_interest, desired_date, status } = req.body;
+        if (!chatId) return res.status(400).json({ error: "chatId es requerido" });
+        
+        try {
+            await memoryDb.updateLeadStatus(chatId, { name, package: package_interest, date: desired_date, status: status || 'nuevo' });
+            res.json({ success: true });
+        } catch (error) {
+            res.status(500).json({ error: "Error creating lead" });
         }
     });
 
