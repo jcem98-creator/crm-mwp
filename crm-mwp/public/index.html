@@ -1,0 +1,1645 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elite CRM | My Wedding Palace</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,700&display=swap');
+
+        :root {
+            --bg: #030305;
+            --card-bg: rgba(255, 255, 255, 0.02);
+            --card-hover: rgba(255, 255, 255, 0.05);
+            --accent: #d4af37; /* Gold */
+            --accent-glow: rgba(212, 175, 55, 0.2);
+            --text: #f0f2f5;
+            --text-dim: #94a3b8;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --border: rgba(255, 255, 255, 0.06);
+            --panel-bg: #0a0a0f;
+            --glass: rgba(255, 255, 255, 0.01);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 0% 0%, rgba(212, 175, 55, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 100% 100%, rgba(59, 130, 246, 0.05) 0%, transparent 40%);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+        .container {
+            max-width: 1500px;
+            margin: 0 auto;
+            padding: 3rem;
+            transition: margin-right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4rem;
+        }
+
+        .logo-area h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.8rem;
+            font-weight: 700;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, #fff 0%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo-area p {
+            color: var(--accent);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            margin-top: 0.4rem;
+            font-weight: 600;
+            opacity: 0.8;
+        }
+
+        /* High Visibility Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3.5rem;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            padding: 2.5rem;
+            border-radius: 32px;
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at top right, var(--accent-glow), transparent 70%);
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+
+        .stat-card:hover { 
+            transform: translateY(-8px);
+            border-color: rgba(212, 175, 55, 0.4);
+            background: var(--card-hover);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+
+        .stat-card:hover::before { opacity: 1; }
+
+        .stat-card span {
+            display: block;
+            color: var(--text-dim);
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 1rem;
+        }
+
+        .stat-card strong {
+            font-size: 2.8rem;
+            font-weight: 700;
+            color: #fff;
+            display: block;
+        }
+
+        /* Tabs Elite */
+        .tabs {
+            display: flex;
+            gap: 0.8rem;
+            margin-bottom: 2.5rem;
+            background: rgba(255,255,255,0.02);
+            padding: 0.6rem;
+            border-radius: 20px;
+            width: fit-content;
+            border: 1px solid var(--border);
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            padding: 0.8rem 2rem;
+            transition: 0.3s;
+            border-radius: 14px;
+        }
+
+        .tab-btn.active {
+            color: #000;
+            background: var(--accent);
+            box-shadow: 0 8px 24px var(--accent-glow);
+        }
+
+        .leads-card, .chart-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(30px);
+            border-radius: 36px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.4);
+            width: 100%;
+        }
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            padding-bottom: 1rem;
+        }
+
+        /* Custom Horizontal Scrollbar for Table */
+        .table-responsive::-webkit-scrollbar {
+            height: 10px;
+        }
+        .table-responsive::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 6px;
+            margin: 0 1rem;
+        }
+        .table-responsive::-webkit-scrollbar-thumb {
+            background: rgba(212, 175, 55, 0.4); /* subtle gold */
+            border-radius: 6px;
+        }
+        .table-responsive::-webkit-scrollbar-thumb:hover {
+            background: var(--accent);
+        }
+
+        .table-scroll-top {
+            width: 100%;
+            overflow-x: auto;
+            margin-bottom: 2px;
+        }
+        .table-scroll-top::-webkit-scrollbar {
+            height: 10px;
+        }
+        .table-scroll-top::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 6px;
+            margin: 0 1rem;
+        }
+        .table-scroll-top::-webkit-scrollbar-thumb {
+            background: rgba(212, 175, 55, 0.4);
+            border-radius: 6px;
+        }
+        .table-scroll-top::-webkit-scrollbar-thumb:hover {
+            background: var(--accent);
+        }
+
+        .table-header {
+            padding: 2.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255,255,255,0.01);
+        }
+
+        .search-box {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--border);
+            padding: 1rem 1.5rem;
+            border-radius: 18px;
+            color: white;
+            outline: none;
+            width: 100%;
+            font-size: 1rem;
+            transition: 0.4s;
+            margin-bottom: 1rem;
+        }
+
+        .search-box:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 5px var(--accent-glow);
+        }
+
+        .filters-container {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+        }
+
+        .filter-select, .filter-date {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--border);
+            padding: 0.8rem 1rem;
+            border-radius: 12px;
+            color: white;
+            outline: none;
+            font-size: 0.85rem;
+            flex: 1;
+            min-width: 150px;
+        }
+        .filter-select option {
+            background: var(--panel-bg);
+            color: white;
+        }
+
+        table { width: 100%; border-collapse: collapse; }
+
+        th {
+            text-align: left;
+            padding: 1.5rem 1rem;
+            color: var(--text-dim);
+            font-weight: 700;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            background: rgba(0,0,0,0.2);
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.9rem;
+            color: #fff;
+        }
+
+        tr:last-child td { border-bottom: none; }
+        tr { cursor: pointer; transition: 0.3s; }
+        tr:hover td { background: var(--card-hover); }
+
+        .sentiment-dot {
+            width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 8px;
+        }
+
+        /* Badges Elite */
+        .status-badge {
+            padding: 0.5rem 1.2rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .badge-nuevo { background: rgba(148, 163, 184, 0.1); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.2); }
+        .badge-interesado { background: rgba(59, 130, 246, 0.1); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.2); }
+        .badge-no-interesado { background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.2); }
+        .badge-cita-local { background: rgba(245, 158, 11, 0.1); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.2); }
+        .badge-pago { background: rgba(16, 185, 129, 0.1); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.2); }
+        .badge-no-contesta { background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.2); }
+        .badge-no-contactado { background: rgba(148, 163, 184, 0.1); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.2); }
+
+        .followup-badge {
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            display: inline-block;
+            text-align: center;
+            min-width: 130px;
+        }
+        .f-pendiente { background: rgba(148, 163, 184, 0.1); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.2); }
+        .f-5h { background: rgba(245, 158, 11, 0.1); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.2); }
+        .f-15h { background: rgba(16, 185, 129, 0.1); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.2); }
+
+        /* Editable inputs in table */
+        .td-input, .td-select {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            width: 100%;
+            min-width: 130px; /* Ensure words are not cut off */
+            transition: 0.2s;
+            cursor: pointer;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+        .td-select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='white' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: calc(100% - 12px) center;
+            padding-right: 30px;
+        }
+        .td-input:hover, .td-select:hover { border-color: var(--accent); background: rgba(255, 255, 255, 0.05); }
+        .td-input:focus, .td-select:focus { 
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+            outline: none;
+        }
+        .td-select option { background: var(--panel-bg); color: #fff; }
+
+        .service-col { min-width: 180px; }
+        .status-col { min-width: 160px; }
+        .channel-col { min-width: 140px; }
+        .date-col { min-width: 150px; }
+        .comments-col { min-width: 250px; }
+
+        /* Detail Panel Elite */
+        #detail-panel {
+            position: fixed;
+            top: 1.5rem;
+            right: -600px;
+            width: 580px;
+            height: calc(100vh - 3rem);
+            background: var(--panel-bg);
+            border-radius: 36px;
+            border: 1px solid var(--border);
+            box-shadow: -40px 0 80px rgba(0,0,0,0.8);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-right: 1.5rem;
+        }
+
+        #detail-panel.open { right: 0; }
+
+        .panel-header {
+            padding: 3rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-title h2 { font-size: 2rem; font-family: 'Playfair Display', serif; }
+
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 3rem;
+        }
+
+        .info-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .info-card {
+            background: rgba(255,255,255,0.03);
+            padding: 1.5rem;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+        }
+
+        .info-card label { display: block; font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700; margin-bottom: 0.6rem; }
+        .info-card div { font-size: 1.1rem; font-weight: 600; color: #fff; }
+
+        .chat-view {
+            background: rgba(0,0,0,0.4);
+            border-radius: 28px;
+            padding: 2rem;
+            height: 500px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            border: 1px solid var(--border);
+            margin-bottom: 2rem;
+        }
+
+        .msg {
+            max-width: 80%;
+            padding: 1.2rem 1.5rem;
+            border-radius: 22px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .msg.user { align-self: flex-end; background: var(--accent); color: #000; font-weight: 600; border-bottom-right-radius: 4px; }
+        .msg.assistant { align-self: flex-start; background: var(--card-bg); border: 1px solid var(--border); color: #fff; border-bottom-left-radius: 4px; }
+
+        .action-bar {
+            background: rgba(255,255,255,0.02);
+            padding: 1.5rem;
+            border-radius: 24px;
+            display: flex;
+            gap: 1rem;
+            margin-top: auto;
+            border: 1px solid var(--border);
+        }
+
+        .action-bar button {
+            flex: 1;
+            padding: 1rem;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            background: rgba(0,0,0,0.3);
+            color: #fff;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.3s;
+            font-size: 0.85rem;
+        }
+
+        .btn-pause { border-color: var(--danger) !important; color: var(--danger) !important; }
+        .btn-pause:hover { background: var(--danger) !important; color: #fff !important; }
+
+        .btn-activate { border-color: var(--success) !important; color: var(--success) !important; }
+        .btn-activate:hover { background: var(--success) !important; color: #fff !important; }
+
+        .btn-reset { border-color: var(--text-dim) !important; color: #fff !important; }
+        .btn-reset:hover { background: #fff !important; color: #000 !important; }
+
+        /* Chat Input */
+        .chat-input-area {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            align-items: flex-end;
+        }
+        .chat-input-area textarea {
+            flex: 1;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1rem 1.2rem;
+            color: #fff;
+            font-family: inherit;
+            font-size: 0.9rem;
+            resize: none;
+            min-height: 48px;
+            max-height: 120px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .chat-input-area textarea:focus { border-color: var(--accent); }
+        .btn-send {
+            background: #25d366;
+            border: none;
+            border-radius: 14px;
+            color: #fff;
+            font-weight: 800;
+            padding: 1rem 1.4rem;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 1.2rem;
+            white-space: nowrap;
+        }
+        .btn-send:hover { opacity: 0.85; transform: scale(1.05); }
+        .btn-send:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.75);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(6px);
+        }
+        .modal-overlay.open { display: flex; }
+        .modal-box {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 32px;
+            padding: 3rem;
+            width: 100%;
+            max-width: 500px;
+            animation: fadeIn 0.3s ease;
+        }
+        .modal-box h3 { font-size: 1.6rem; font-family: 'Playfair Display', serif; margin-bottom: 2rem; color: var(--accent); }
+        .modal-field { margin-bottom: 1.5rem; }
+        .modal-field label { display: block; font-size: 0.78rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.5rem; }
+        .modal-field input, .modal-field select, .modal-field textarea {
+            width: 100%;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 0.9rem 1rem;
+            color: #fff;
+            font-family: inherit;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s;
+            box-sizing: border-box;
+        }
+        .modal-field input:focus, .modal-field select:focus, .modal-field textarea:focus { border-color: var(--accent); }
+        .modal-field select option { background: #1e1e2e; }
+        .modal-actions { display: flex; gap: 1rem; margin-top: 2rem; }
+        .btn-modal-submit { flex: 2; background: var(--accent); color: #000; border: none; border-radius: 14px; padding: 1rem; font-weight: 800; font-size: 1rem; cursor: pointer; transition: 0.2s; }
+        .btn-modal-submit:hover { opacity: 0.85; }
+        .btn-modal-cancel { flex: 1; background: transparent; color: var(--text-dim); border: 1px solid var(--border); border-radius: 14px; padding: 1rem; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .btn-modal-cancel:hover { color: #fff; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Metrics Funnel */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 2rem;
+        }
+
+        .metrics-card { padding: 3rem; background: var(--card-bg); border-radius: 40px; border: 1px solid var(--border); }
+        .metrics-card h3 { font-size: 1.5rem; font-family: 'Playfair Display', serif; margin-bottom: 2rem; color: var(--accent); }
+
+        /* Kanban Board */
+        .kanban-board {
+            display: flex;
+            gap: 1.5rem;
+            overflow-x: auto;
+            padding-bottom: 2rem;
+            min-height: 60vh;
+        }
+        .kanban-board::-webkit-scrollbar { height: 10px; }
+        .kanban-board::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); border-radius: 6px; }
+        .kanban-board::-webkit-scrollbar-thumb { background: rgba(212, 175, 55, 0.4); border-radius: 6px; }
+        .kanban-board::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+        .kanban-column {
+            flex: 0 0 320px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: 0.3s;
+        }
+        .kanban-column.drag-over {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--accent);
+        }
+        .kanban-header {
+            padding: 1.5rem;
+            background: rgba(0,0,0,0.2);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .kanban-header h3 {
+            font-size: 1.1rem;
+            color: #fff;
+            font-weight: 700;
+        }
+        .kanban-header .count {
+            background: rgba(255,255,255,0.1);
+            color: var(--text-dim);
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 800;
+        }
+        .kanban-cards {
+            padding: 1rem;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            overflow-y: auto;
+            min-height: 200px;
+        }
+        .kanban-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border);
+            padding: 1.2rem;
+            border-radius: 16px;
+            cursor: grab;
+            transition: 0.2s;
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+            animation: fadeIn 0.3s ease;
+        }
+        .kanban-card:hover {
+            border-color: rgba(212, 175, 55, 0.4);
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateY(-2px);
+        }
+        .kanban-card:active { cursor: grabbing; }
+        .kanban-card.dragging { opacity: 0.5; }
+        .kanban-card-title {
+            font-weight: 800;
+            color: #fff;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .kanban-card-title .wa-icon {
+            color: #25d366;
+            text-decoration: none;
+            font-size: 1.2rem;
+            transition: 0.2s;
+        }
+        .kanban-card-title .wa-icon:hover { transform: scale(1.1); }
+        .kanban-card-meta {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .k-badge {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 800;
+        }
+        /* View Toggle Switch */
+        .view-toggle {
+            display: flex;
+            background: rgba(255,255,255,0.05);
+            padding: 4px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            margin-right: 1rem;
+        }
+        .toggle-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-dim);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .toggle-btn.active {
+            background: var(--accent);
+            color: #000;
+        }
+        .toggle-btn:hover:not(.active) {
+            background: rgba(212,175,55,0.1);
+            color: var(--accent);
+        }
+
+        /* Unified Layout */
+        .mode-container {
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Enhanced Kanban Cards */
+        .kanban-card {
+            position: relative;
+            background: rgba(255,255,255,0.03) !important;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255,255,255,0.05) !important;
+        }
+        .kanban-card-alert {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 0.9rem;
+        }
+        .k-badge {
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+        .badge-nuevo { background: rgba(52,152,219,0.2); color: #3498db; }
+        .badge-interesado { background: rgba(241,196,15,0.2); color: #f1c40f; }
+        .badge-cita { background: rgba(230,126,34,0.2); color: #e67e22; }
+        .badge-pago { background: rgba(46,204,113,0.2); color: #2ecc71; }
+        .badge-perdido { background: rgba(149,165,166,0.2); color: #95a5a6; }
+
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <div class="logo-area">
+                <h1 id="business-name-h1">My Wedding Palace</h1>
+                <p id="business-slogan-p">Elite CRM & Lead Intelligence</p>
+            </div>
+            <div class="global-actions">
+                <button class="tab-btn" style="background: var(--card-bg); color: var(--text); border: 1px solid var(--border); margin-right: 1rem;" onclick="window.location.href='/api/leads/export'">⬇️ Excel</button>
+                <button class="tab-btn" style="background: var(--accent); color: #000; margin-right: 1rem;" onclick="fetchLeads()">Sincronizar</button>
+                <span id="last-sync" style="color: var(--text-dim); font-size: 0.8rem;">Actualizado: -</span>
+            </div>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab-btn active" id="btn-leads" onclick="switchView('leads')">Gestión de Leads</button>
+            <button class="tab-btn" id="btn-metrics" onclick="switchView('metrics')">Performance & Funnel</button>
+        </nav>
+
+        <!-- View: Unified Leads (Lista/Kanban) -->
+        <section id="view-leads" class="view-section active">
+            <!-- Global Stats Row -->
+            <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-bottom: 1.5rem;">
+                <div class="stat-card" style="cursor: pointer;" onclick="document.getElementById('filter-status').value='nuevo'; applyFilters();">
+                    <span>🔥 Atención Urgente</span>
+                    <strong id="stat-urgente" style="color: var(--danger);">0</strong>
+                </div>
+                <div class="stat-card">
+                    <span>📅 Citas / Neg.</span>
+                    <strong id="stat-citas" style="color: var(--warning);">0</strong>
+                </div>
+                <div class="stat-card">
+                    <span>🚨 Zona Rescate</span>
+                    <strong id="stat-fugas" style="color: #f87171;">0</strong>
+                </div>
+                <div class="stat-card" style="opacity: 0.6;">
+                    <span>🗑️ Descartados</span>
+                    <strong id="stat-perdidos" style="color: var(--text-dim);">0</strong>
+                </div>
+                <div class="stat-card">
+                    <span>🏆 Cierres</span>
+                    <strong id="stat-pagado" style="color: var(--success);">0</strong>
+                </div>
+            </div>
+
+            <div class="leads-card">
+                <div class="table-header" style="justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <h2 id="view-title">Flujo de Leads</h2>
+                        <!-- Toggle Switch -->
+                        <div class="view-toggle">
+                            <button id="toggle-list" class="toggle-btn active" onclick="setMode('list')">📋 Lista</button>
+                            <button id="toggle-kanban" class="toggle-btn" onclick="setMode('kanban')">📊 Kanban</button>
+                        </div>
+                    </div>
+                    <button id="btn-nuevo-lead" onclick="showNewLeadRow()" style="background: #25d366; color: #fff; border: none; border-radius: 12px; padding: 0.6rem 1.2rem; font-weight: 800; font-size: 0.85rem; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 0.5rem;">➕ Nuevo Lead</button>
+                </div>
+                
+                <!-- Unified Filters Bar -->
+                <div class="filters-container" style="width: 100%; margin-bottom: 1.5rem; display: flex; gap: 0.8rem; flex-wrap: wrap;">
+                    <input type="text" id="search-input" class="search-box" style="flex: 1; min-width: 250px; margin-bottom: 0;" placeholder="Buscar por nombre, teléfono o comentarios..." oninput="applyFilters()">
+                    
+                    <select id="filter-status" class="filter-select" style="width: auto; flex: none;" onchange="applyFilters()">
+                        <option value="">Status (Todos)</option>
+                        <option value="nuevo">Nuevo</option>
+                        <option value="interesado">Interesado</option>
+                        <option value="cita local">Cita Local</option>
+                        <option value="pago">Pago / Ganado</option>
+                        <option value="perdido">Perdido / Fallido</option>
+                        <option value="human">Pausado (Manual)</option>
+                    </select>
+                    
+                    <select id="filter-service" class="filter-select" style="width: auto; flex: none;" onchange="applyFilters()">
+                        <option value="">Servicio (Todos)</option>
+                        <option value="Boda">Boda</option>
+                        <option value="XV">XV Años</option>
+                        <option value="Civil">Civil</option>
+                        <option value="Mobiliario">Mobiliario</option>
+                    </select>
+
+                    <button class="btn-reset" style="padding: 0 1rem; height: 38px; font-size: 0.8rem;" onclick="resetFilters()">Limpiar</button>
+                </div>
+
+                <!-- Container: List View -->
+                <div id="container-list" class="mode-container">
+                    <div class="table-responsive" id="main-table-wrapper">
+                        <table id="leads-table" style="min-width: 1200px; border-spacing: 0;">
+                            <thead>
+                                <tr>
+                                    <th>CLIENTE</th>
+                                    <th>CELULAR</th>
+                                    <th>CANAL</th>
+                                    <th>SERVICIO</th>
+                                    <th>STATUS</th>
+                                    <th>ÚLTIMA ACT.</th>
+                                    <th>ACCIÓN</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leads-body">
+                                <!-- Leads list -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Container: Kanban View -->
+                <div id="container-kanban" class="mode-container" style="display: none;">
+                    <div class="kanban-board">
+                        <div class="kanban-column" id="kcol-nuevo" data-status="nuevo" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="dragLeave(event)">
+                            <div class="kanban-header"><h3>📥 Nuevo</h3><span class="count" id="kcount-nuevo">0</span></div>
+                            <div class="kanban-cards" id="kcards-nuevo"></div>
+                        </div>
+                        <div class="kanban-column" id="kcol-interesado" data-status="interesado" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="dragLeave(event)">
+                            <div class="kanban-header"><h3>💬 Interesado</h3><span class="count" id="kcount-interesado">0</span></div>
+                            <div class="kanban-cards" id="kcards-interesado"></div>
+                        </div>
+                        <div class="kanban-column" id="kcol-cita" data-status="cita local" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="dragLeave(event)">
+                            <div class="kanban-header"><h3>📅 Cita / Negoc.</h3><span class="count" id="kcount-cita">0</span></div>
+                            <div class="kanban-cards" id="kcards-cita"></div>
+                        </div>
+                        <div class="kanban-column" id="kcol-pago" data-status="pago" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="dragLeave(event)">
+                            <div class="kanban-header"><h3>🏆 Ganado</h3><span class="count" id="kcount-pago">0</span></div>
+                            <div class="kanban-cards" id="kcards-pago"></div>
+                        </div>
+                        <div class="kanban-column" id="kcol-perdido" data-status="perdido" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="dragLeave(event)">
+                            <div class="kanban-header"><h3>❌ Perdido</h3><span class="count" id="kcount-perdido">0</span></div>
+                            <div class="kanban-cards" id="kcards-perdido"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- View: Metrics -->
+        <section id="view-metrics" class="view-section" style="display: none;">
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <h2 style="color: #fff; margin:0;">Dashboard de Rendimiento</h2>
+                <select id="metrics-timeframe" class="filter-select" style="flex: none; width: auto; min-width: 200px; font-weight: bold; background: rgba(212,175,55,0.1); border-color: var(--accent); color: var(--accent);" onchange="applyTimeframeFilter()">
+                    <option value="hoy">Hoy</option>
+                    <option value="semana">Últimos 7 días</option>
+                    <option value="mes" selected>Este Mes</option>
+                    <option value="mes_anterior">Mes Anterior</option>
+                    <option value="ytd">Este Año (YTD)</option>
+                    <option value="todo">Histórico (Todo)</option>
+                </select>
+            </div>
+
+            <div class="stats-grid" id="metrics-top-cards" style="margin-bottom: 2rem;">
+                <div class="stat-card">
+                    <span>Nuevos Leads (Mes)</span>
+                    <strong id="kpi-new-leads">0</strong>
+                </div>
+                <div class="stat-card">
+                    <span>Tasa de Cierre (Win Rate)</span>
+                    <strong id="kpi-win-rate">0%</strong>
+                </div>
+                <div class="stat-card">
+                    <span>Ventas (Pagos)</span>
+                    <strong id="kpi-sales">0</strong>
+                </div>
+                <div class="stat-card" style="border-color: rgba(212,175,55,0.4);">
+                    <span style="color: var(--accent);">Proyección Ingresos</span>
+                    <strong id="kpi-revenue" style="color: var(--accent);">$0</strong>
+                </div>
+            </div>
+
+            <div class="metrics-grid">
+                <div class="metrics-card" style="grid-column: span 2;">
+                    <h3>Funnel de Conversión</h3>
+                    <div style="height: 250px;"><canvas id="funnelChart"></canvas></div>
+                </div>
+                <div class="metrics-card">
+                    <h3>Demanda por Servicios</h3>
+                    <div style="height: 250px;"><canvas id="packagesChart"></canvas></div>
+                </div>
+                <div class="metrics-card" style="grid-column: span 2;">
+                    <h3>Calidad por Canal (Leads vs Ventas)</h3>
+                    <div style="height: 250px;"><canvas id="channelChart"></canvas></div>
+                </div>
+                <div class="metrics-card">
+                    <h3>Esfuerzo de Seguimiento</h3>
+                    <div style="height: 250px;"><canvas id="touchesChart"></canvas></div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Side Panel Elite -->
+    <div id="detail-panel">
+        <div class="panel-header">
+            <div class="panel-title">
+                <h2 id="panel-name">Cargando...</h2>
+                <a id="wa-link" href="#" target="_blank" style="text-decoration: none;">
+                    <span id="panel-jid" style="color: var(--accent); font-weight: 700;">+000 000 0000</span>
+                </a>
+            </div>
+            <button class="panel-close" onclick="closePanel()">✕</button>
+        </div>
+        <div class="panel-content">
+            <div class="info-group">
+                <div class="info-card">
+                    <label>Paquete de Interés</label>
+                    <div id="panel-interest">-</div>
+                </div>
+                <div class="info-card">
+                    <label>Fecha del Evento</label>
+                    <div id="panel-date">-</div>
+                </div>
+            </div>
+
+            <div class="chat-view" id="chat-history">
+                <!-- History -->
+            </div>
+
+            <div class="chat-input-area">
+                <textarea id="chat-msg-input" placeholder="Escribe un mensaje como asesor..." rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessageFromPanel();}"></textarea>
+                <button class="btn-send" onclick="sendMessageFromPanel()" title="Enviar por WhatsApp">&#128172;</button>
+            </div>
+
+            <div class="action-bar">
+                <button id="btn-pause-action" class="btn-pause" onclick="pauseAI()">Pausar IA</button>
+                <button id="btn-activate-action" class="btn-activate" onclick="activateAI()" style="display: none;">Activar IA</button>
+                <button class="btn-reset" onclick="resetLead()">Resetear Lead</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- (modal removed — inline row used instead) -->
+
+    <script>
+        let currentLeads = [];
+        let selectedChatId = null;
+        let charts = {};
+
+        async function fetchLeads() {
+            try {
+                const res = await fetch('/api/leads');
+                currentLeads = await res.json();
+                applyFilters(); // applyFilters will call renderLeads and renderKanban
+                document.getElementById('last-sync').innerText = 'Actualizado: ' + new Date().toLocaleTimeString();
+            } catch (err) {
+                console.error("Error sync:", err);
+            }
+        }
+
+        function switchView(view) {
+            document.querySelectorAll('.view-section').forEach(s => s.style.display = 'none');
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            
+            const target = document.getElementById('view-' + view);
+            if (target) {
+                target.style.display = 'block';
+                document.getElementById('btn-' + view).classList.add('active');
+            }
+        }
+
+        function setMode(mode) {
+            const containers = document.querySelectorAll('.mode-container');
+            const btns = document.querySelectorAll('.toggle-btn');
+            
+            containers.forEach(c => c.style.display = 'none');
+            btns.forEach(b => b.classList.remove('active'));
+            
+            document.getElementById('container-' + mode).style.display = 'block';
+            document.getElementById('toggle-' + mode).classList.add('active');
+            
+            // Re-render to ensure everything is in sync
+            renderLeads(currentLeads);
+            renderKanban(currentLeads);
+        }
+
+        function resetFilters() {
+            document.getElementById('search-input').value = '';
+            document.getElementById('filter-status').value = '';
+            document.getElementById('filter-service').value = '';
+            applyFilters();
+        }
+
+        function renderLeads(leads) {
+            const body = document.getElementById('leads-body');
+            // Preserve the inline new-lead row if it's open
+            const existingNewRow = document.getElementById('new-lead-row');
+            body.innerHTML = '';
+            
+            leads.forEach(l => {
+                const tr = document.createElement('tr');
+                const cleanPhone = l.chat_id.split('@')[0];
+                const lastAct = l.last_bot_message_at ? new Date(l.last_bot_message_at).toLocaleDateString() : 'Sin act.';
+                
+                tr.innerHTML = `
+                    <td onclick="openPanel(${JSON.stringify(l).replace(/"/g, '&quot;')})" style="cursor:pointer; font-weight:700;">
+                        ${l.name || 'Invitado'}
+                    </td>
+                    <td>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span>${cleanPhone}</span>
+                            <a href="https://wa.me/${cleanPhone}" target="_blank" style="text-decoration:none;">💬</a>
+                        </div>
+                    </td>
+                    <td>
+                        <select class="td-select" onchange="updateField('${l.chat_id}', 'channel', this.value)">
+                            <option value="Whatsapp" ${l.channel === 'Whatsapp' ? 'selected' : ''}>Whatsapp</option>
+                            <option value="Local" ${l.channel === 'Local' ? 'selected' : ''}>Local</option>
+                            <option value="Llamada" ${l.channel === 'Llamada' ? 'selected' : ''}>Llamada</option>
+                            <option value="Referido" ${l.channel === 'Referido' ? 'selected' : ''}>Referido</option>
+                        </select>
+                    </td>
+                    <td>
+                        <select class="td-select" onchange="updateField('${l.chat_id}', 'package', this.value)">
+                            <option value="" ${!l.package_interest ? 'selected' : ''}>-</option>
+                            <option value="Boda" ${l.package_interest === 'Boda' ? 'selected' : ''}>Boda</option>
+                            <option value="XV" ${l.package_interest === 'XV' ? 'selected' : ''}>XV Años</option>
+                            <option value="Civil" ${l.package_interest === 'Civil' ? 'selected' : ''}>Civil</option>
+                            <option value="Mobiliario" ${l.package_interest === 'Mobiliario' ? 'selected' : ''}>Mobiliario</option>
+                        </select>
+                    </td>
+                    <td>
+                        <select class="td-select status-badge badge-${(l.status || 'nuevo').replace(/\s+/g, '-').toLowerCase()}" onchange="updateField('${l.chat_id}', 'status', this.value)">
+                            <option value="nuevo" ${l.status === 'nuevo' ? 'selected' : ''}>Nuevo</option>
+                            <option value="interesado" ${l.status === 'interesado' ? 'selected' : ''}>Interesado</option>
+                            <option value="cita local" ${l.status === 'cita local' ? 'selected' : ''}>Cita Local</option>
+                            <option value="pago" ${l.status === 'pago' ? 'selected' : ''}>Pago</option>
+                            <option value="perdido" ${l.status === 'perdido' ? 'selected' : ''}>Perdido</option>
+                        </select>
+                    </td>
+                    <td style="font-size: 0.85rem; color: var(--text-dim);">
+                        ${lastAct}
+                    </td>
+                    <td>
+                        <button class="btn-reset" style="padding: 4px 10px;" onclick='openPanel(${JSON.stringify(l).replace(/"/g, '&quot;')})'>Detalles</button>
+                    </td>
+                `;
+                body.appendChild(tr);
+            });
+
+            // Sync top scrollbar track width with actual rendered table width
+            setTimeout(() => {
+                const tableEl = document.getElementById('leads-table');
+                if (tableEl) {
+                    document.getElementById('top-scroll-inner').style.width = tableEl.offsetWidth + 'px';
+                }
+            }, 100);
+
+            // Restore the inline new-lead row at the top if it was open
+            if (existingNewRow) {
+                body.insertBefore(existingNewRow, body.firstChild);
+            }
+        }
+
+        async function updateField(chatId, field, value) {
+            try {
+                const body = { chatId };
+                body[field] = value;
+                
+                // If special case for backend amount vs value
+                if (field === 'amount') body.amount = parseFloat(value);
+                if (field === 'followup_count') body.followup_count = parseInt(value);
+
+                const res = await fetch('/api/leads/update-status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                if (res.ok) {
+                    console.log(`Campo ${field} actualizado para ${chatId}`);
+                    // Optionally refresh stats but not necessary to re-render everything
+                    updateStatsFromServer();
+                }
+            } catch (err) {
+                console.error("Error updating field:", err);
+            }
+        }
+
+        async function updateStatsFromServer() {
+            // Silently update background data without re-rendering everything if possible
+            // For now, let's keep it simple and just fetchLeads if needed
+            fetchLeads(); 
+        }
+
+        function updateStats(leads) {
+            const urgent = leads.filter(l => l.needs_followup || l.status === 'nuevo').length;
+            const opps = leads.filter(l => l.status === 'cita local' || l.status === 'interesado').length;
+            const rescue = leads.filter(l => l.status === 'no contesta' || l.status === 'no contactado').length;
+            const discarded = leads.filter(l => l.status === 'no interesado' || l.status === 'perdido').length;
+            const paid = leads.filter(l => l.status === 'pago').length;
+
+            if (document.getElementById('stat-urgente')) document.getElementById('stat-urgente').innerText = urgent;
+            if (document.getElementById('stat-citas')) document.getElementById('stat-citas').innerText = opps;
+            if (document.getElementById('stat-fugas')) document.getElementById('stat-fugas').innerText = rescue;
+            if (document.getElementById('stat-perdidos')) document.getElementById('stat-perdidos').innerText = discarded;
+            if (document.getElementById('stat-pagado')) document.getElementById('stat-pagado').innerText = paid;
+
+            // Update column counts in Kanban
+            ['nuevo', 'interesado', 'cita', 'pago', 'perdido'].forEach(s => {
+                const el = document.getElementById('kcount-' + s);
+                if (el) {
+                    const count = (s === 'perdido') 
+                        ? leads.filter(l => ['perdido', 'no interesado', 'no contesta', 'no contactado'].includes(l.status)).length
+                        : leads.filter(l => l.status === (s === 'cita' ? 'cita local' : s)).length;
+                    el.innerText = count;
+                }
+            });
+        }
+
+        /* ── Kanban UI Logic ────────────────────────────────────────────── */
+        function renderKanban(leads) {
+            const columns = {
+                'nuevo': document.getElementById('kcards-nuevo'),
+                'interesado': document.getElementById('kcards-interesado'),
+                'cita local': document.getElementById('kcards-cita'),
+                'pago': document.getElementById('kcards-pago'),
+                'perdido': document.getElementById('kcards-perdido')
+            };
+            // Clear all columns
+            Object.values(columns).forEach(c => { if(c) c.innerHTML = ''; });
+
+            leads.forEach(l => {
+                const status = l.status || 'nuevo';
+                let container = columns[status];
+                
+                // Map other secondary statuses to 'perdido'
+                if (!container && ['no interesado', 'no contesta', 'no contactado', 'perdido'].includes(status)) {
+                    container = columns['perdido'];
+                }
+
+                if (!container) return; // Should not happen with current setup
+
+                const div = document.createElement('div');
+                div.className = 'kanban-card';
+                div.id = 'kcard-' + l.chat_id.replace('@s.whatsapp.net', '');
+                div.draggable = true;
+                
+                div.ondragstart = (e) => {
+                    e.dataTransfer.setData('chatId', l.chat_id);
+                    setTimeout(() => div.classList.add('dragging'), 0);
+                };
+                div.ondragend = () => {
+                    div.classList.remove('dragging');
+                    document.querySelectorAll('.kanban-column').forEach(c => c.classList.remove('drag-over'));
+                };
+
+                const sentimentColor = l.needs_followup ? 'var(--danger)' : 'var(--accent)';
+                let displayStatus = l.status || 'Nuevo';
+                let badgeClass = `badge-${displayStatus.replace(/\s+/g, '-').toLowerCase()}`;
+                const phone = l.chat_id.split('@')[0];
+
+                // Card content with alert icon
+                div.innerHTML = `
+                    ${l.needs_followup ? '<div class="kanban-card-alert" title="Atención Urgente">🔥</div>' : ''}
+                    <div class="kanban-card-title" onclick='openPanel(${JSON.stringify(l).replace(/'/g, "&#39;")})'>
+                        <span>${l.name || 'Invitado'}</span>
+                        <a href="https://wa.me/${phone}" target="_blank" class="wa-icon" title="Chat en WhatsApp" onclick="event.stopPropagation()">💬</a>
+                    </div>
+                    <div class="kanban-card-meta" onclick='openPanel(${JSON.stringify(l).replace(/'/g, "&#39;")})'>
+                        <span>${phone}</span>
+                        <span style="font-size: 0.7rem; opacity: 0.7;">${l.source || 'WhatsApp'}</span>
+                    </div>
+                    <div class="kanban-card-meta" style="margin-top:4px;" onclick='openPanel(${JSON.stringify(l).replace(/'/g, "&#39;")})'>
+                        <span class="k-badge ${badgeClass}">${displayStatus}</span>
+                        <span style="font-size:0.75rem;">${l.package_interest || '-'}</span>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // Drop zone events
+        function allowDrop(ev) {
+            ev.preventDefault();
+            // Highlight column
+            if(ev.target.closest('.kanban-column')) {
+                ev.target.closest('.kanban-column').classList.add('drag-over');
+            }
+        }
+
+        function dragLeave(ev) {
+            if(ev.target.closest('.kanban-column')) {
+                ev.target.closest('.kanban-column').classList.remove('drag-over');
+            }
+        }
+
+        async function drop(ev) {
+            ev.preventDefault();
+            const col = ev.target.closest('.kanban-column');
+            if (col) {
+                col.classList.remove('drag-over');
+                const chatId = ev.dataTransfer.getData('chatId');
+                const newStatus = col.getAttribute('data-status');
+                
+                if (chatId && newStatus) {
+                    // Mueve visualmente primero
+                    const cardId = 'kcard-' + chatId.replace('@s.whatsapp.net', '');
+                    const card = document.getElementById(cardId);
+                    if (card) {
+                        col.querySelector('.kanban-cards').appendChild(card);
+                    }
+                    
+                    // Actualiza en la base de datos
+                    await updateField(chatId, 'status', newStatus);
+                    
+                    // En lugar de llamar fetchLeads() entero y provocar parpadeo, podemos re-renderear localmente:
+                    // (Pero fetchLeads es más seguro para sincronizar el estado global de Leads + KPIs)
+                    fetchLeads();
+                }
+            }
+        }
+        /* ──────────────────────────────────────────────────────────────────── */
+
+        async function openPanel(lead) {
+            selectedChatId = lead.chat_id;
+            const panel = document.getElementById('detail-panel');
+            document.getElementById('panel-name').innerText = lead.name || 'Invitado MWP';
+            document.getElementById('panel-jid').innerText = '+' + lead.chat_id.split('@')[0];
+            document.getElementById('panel-interest').innerText = lead.package_interest || 'No definido';
+            document.getElementById('panel-date').innerText = lead.desired_date || 'Por definir';
+            document.getElementById('wa-link').href = `https://wa.me/${lead.chat_id.split('@')[0]}`;
+            
+            // Toggle buttons
+            if (lead.status === 'human') {
+                document.getElementById('btn-pause-action').style.display = 'none';
+                document.getElementById('btn-activate-action').style.display = 'block';
+            } else {
+                document.getElementById('btn-pause-action').style.display = 'block';
+                document.getElementById('btn-activate-action').style.display = 'none';
+            }
+
+            panel.classList.add('open');
+            if (window.innerWidth > 1000) document.querySelector('.container').style.marginRight = '600px';
+
+            document.getElementById('chat-history').innerHTML = '<p style="text-align: center; color: var(--text-dim);">Cargando historial...</p>';
+            const res = await fetch(`/api/leads/${lead.chat_id}/messages`);
+            const msgs = await res.json();
+            renderMessages(msgs);
+        }
+
+        function renderMessages(msgs) {
+            const history = document.getElementById('chat-history');
+            history.innerHTML = '';
+            msgs.forEach(m => {
+                const div = document.createElement('div');
+                div.className = `msg ${m.role}`;
+                div.innerText = m.content;
+                history.appendChild(div);
+            });
+            history.scrollTop = history.scrollHeight;
+        }
+
+        async function pauseAI() {
+            if (!selectedChatId) return;
+            await fetch(`/api/leads/${selectedChatId}/pause`, { method: 'POST' });
+            alert("Cynthia ha sido pausada para este cliente.");
+            closePanel();
+            fetchLeads();
+        }
+
+        async function activateAI() {
+            if (!selectedChatId) return;
+            await fetch(`/api/leads/${selectedChatId}/activate`, { method: 'POST' });
+            alert("IA Reactivada. Cynthia volverá a responder.");
+            closePanel();
+            fetchLeads();
+        }
+
+        async function resetLead() {
+            if (!selectedChatId || !confirm("¿Estás seguro de resetear este lead? Se borrará el historial y el estatus.")) return;
+            await fetch(`/api/leads/${selectedChatId}/reset`, { method: 'POST' });
+            closePanel();
+            fetchLeads();
+        }
+
+        function closePanel() {
+            document.getElementById('detail-panel').classList.remove('open');
+            document.querySelector('.container').style.marginRight = 'auto';
+        }
+
+        function countBy(arr, keyParser) {
+            return arr.reduce((acc, obj) => {
+                let v = keyParser(obj) || 'Sin definir';
+                acc[v] = (acc[v] || 0) + 1;
+                return acc;
+            }, {});
+        }
+
+        function applyTimeframeFilter() {
+            const range = document.getElementById('metrics-timeframe').value;
+            const now = new Date();
+            let filtered = currentLeads;
+
+            if (range !== 'todo') {
+                filtered = currentLeads.filter(l => {
+                    if (!l.created_at) return false;
+                    const d = new Date(l.created_at);
+                    if (range === 'hoy') {
+                        return d.toDateString() === now.toDateString();
+                    } else if (range === 'semana') {
+                        const weekAgo = new Date(now);
+                        weekAgo.setDate(now.getDate() - 7);
+                        return d >= weekAgo;
+                    } else if (range === 'mes') {
+                        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+                    } else if (range === 'mes_anterior') {
+                        let prevMonth = now.getMonth() - 1;
+                        let year = now.getFullYear();
+                        if (prevMonth < 0) { prevMonth = 11; year--; }
+                        return d.getMonth() === prevMonth && d.getFullYear() === year;
+                    } else if (range === 'ytd') {
+                        return d.getFullYear() === now.getFullYear();
+                    }
+                    return true;
+                });
+            }
+            renderMetrics(filtered);
+        }
+
+        function renderMetrics(leads) {
+            // 1. KPI Cards
+            const total = leads.length;
+            const statusCount = countBy(leads, l => (l.status||'').toLowerCase());
+            const pagos = statusCount['pago'] || 0;
+            const citas = statusCount['cita local'] || 0;
+            const interesados = statusCount['interesado'] || 0;
+            const winRate = total > 0 ? ((pagos / total) * 100).toFixed(1) : 0;
+            
+            // Basic Revenue Projection: Real Paid ones + Potential (Citas)
+            let revenue = leads.reduce((sum, l) => sum + (parseFloat(l.paid_amount) || 0), 0);
+            if (revenue === 0) {
+               // Fallback purely illustrative if amount is empty in DB
+               revenue = pagos * 1500; 
+            }
+            let potential = citas * 1500;
+            
+            document.getElementById('kpi-new-leads').innerText = total;
+            document.getElementById('kpi-win-rate').innerText = winRate + '%';
+            document.getElementById('kpi-sales').innerText = pagos;
+            document.getElementById('kpi-revenue').innerText = '$' + (revenue + potential).toLocaleString();
+
+            const docStyle = getComputedStyle(document.body);
+            const accent = docStyle.getPropertyValue('--accent').trim();
+            const warning = docStyle.getPropertyValue('--warning').trim();
+            const success = docStyle.getPropertyValue('--success').trim();
+            const danger = docStyle.getPropertyValue('--danger').trim();
+            const border = docStyle.getPropertyValue('--border').trim();
+            const chartColors = [accent, '#3b82f6', '#8b5cf6', '#ec4899', '#f97316'];
+
+            // 1. Funnel Chart (Bar horizontal)
+            if (charts.funnel) charts.funnel.destroy();
+            charts.funnel = new Chart(document.getElementById('funnelChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: ['Prospectos', 'Interesados', 'Cita Local', 'Pagos (Ventas)'],
+                    datasets: [{
+                        data: [total, interesados, citas, pagos],
+                        backgroundColor: [border, warning, '#3b82f6', success],
+                        borderRadius: 6
+                    }]
+                },
+                options: { 
+                    indexAxis: 'y', 
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display:false } },
+                    scales: {
+                        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+                        y: { border: {display: false}, ticks: { color: '#fff', font: { weight: 'bold' } } }
+                    }
+                }
+            });
+
+            // 2. Packages Doughnut
+            const pkgs = countBy(leads, l => l.package_interest || l.package);
+            const pkgLabels = Object.keys(pkgs);
+            if (charts.packages) charts.packages.destroy();
+            charts.packages = new Chart(document.getElementById('packagesChart').getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: pkgLabels,
+                    datasets: [{ data: pkgLabels.map(k => pkgs[k]), backgroundColor: chartColors, borderWidth: 0 }]
+                },
+                options: { maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#fff' } } }, cutout: '70%' }
+            });
+
+            // 3. Channel Quality (Bar)
+            const channels = countBy(leads, l => l.channel);
+            const channelLabels = Object.keys(channels);
+            const channelSales = channelLabels.map(c => leads.filter(l => (l.channel||'Sin definir') === c && (l.status||'').toLowerCase() === 'pago').length);
+            if (charts.channel) charts.channel.destroy();
+            charts.channel = new Chart(document.getElementById('channelChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: channelLabels,
+                    datasets: [
+                        { label: 'Total Leads', data: channelLabels.map(c => channels[c]), backgroundColor: '#334155', borderRadius: 4 },
+                        { label: 'Cierres (Pagos)', data: channelSales, backgroundColor: success, borderRadius: 4 }
+                    ]
+                },
+                options: { 
+                    maintainAspectRatio: false, 
+                    plugins: { legend: { labels: { color: '#fff' } } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: '#fff' } },
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } }
+                    }
+                }
+            });
+
+            // 4. Follow-up Efforts (Donut)
+            let t0 = 0, t1_3 = 0, t4 = 0;
+            leads.forEach(l => {
+                const c = l.followup_count || 0;
+                if(c === 0) t0++; else if(c <= 3) t1_3++; else t4++;
+            });
+            if (charts.touches) charts.touches.destroy();
+            charts.touches = new Chart(document.getElementById('touchesChart').getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Sin contacto (0)', 'Seguimiento (1-3)', 'Insistencia (4+)'],
+                    datasets: [{ data: [t0, t1_3, t4], backgroundColor: [danger, warning, success], borderWidth: 0 }]
+                },
+                options: { maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#fff' } } }, cutout: '70%' }
+            });
+        }
+
+        async function fetchConfig() {
+            try {
+                const res = await fetch('/api/config');
+                const conf = await res.json();
+                document.getElementById('business-name-h1').innerText = conf.businessName;
+                document.getElementById('business-slogan-p').innerText = conf.businessSlogan;
+                document.title = `${conf.businessName} | Dashboard`;
+            } catch (err) {
+                console.error("Error fetching config:", err);
+            }
+        }
+
+        function applyFilters() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            const fStatus = document.getElementById('filter-status').value.toLowerCase();
+            const fService = document.getElementById('filter-service').value.toLowerCase();
+
+            const filtered = currentLeads.filter(l => {
+                const name = (l.name || '').toLowerCase();
+                const phone = (l.chat_id || '').toLowerCase();
+                const comments = (l.comments || '').toLowerCase();
+                
+                const nameMatch = name.includes(query) || phone.includes(query) || comments.includes(query);
+                const statusMatch = !fStatus || (l.status || 'nuevo') === fStatus;
+                const serviceMatch = !fService || (l.package_interest || '').includes(fService);
+                
+                return nameMatch && statusMatch && serviceMatch;
+            });
+
+            // Re-render everything with the filtered data
+            renderLeads(filtered);
+            renderKanban(filtered);
+            updateStats(filtered);
+        }
+
+        // ── Nuevo Lead: Inline Row ──────────────────────────────────────────
+        function showNewLeadRow() {
+            // Don't add a duplicate row
+            if (document.getElementById('new-lead-row')) return;
+
+            const btn = document.getElementById('btn-nuevo-lead');
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+
+            const tbody = document.getElementById('leads-body');
+            const tr = document.createElement('tr');
+            tr.id = 'new-lead-row';
+            tr.style.background = 'rgba(37,211,102,0.07)';
+            tr.style.animation = 'fadeIn 0.3s ease';
+            tr.innerHTML = `
+                <td><input id="nl-name" type="text" class="td-input" placeholder="Nombre completo *" style="min-width:160px; border-color: #25d366;"></td>
+                <td><input id="nl-phone" type="text" class="td-input" placeholder="Celular * (ej: 51912345678)" style="min-width:150px; border-color: #25d366;"></td>
+                <td><input id="nl-date" type="date" class="td-input" value="${new Date().toISOString().split('T')[0]}"></td>
+                <td>
+                    <select id="nl-channel" class="td-select">
+                        <option value="Referido">Referido</option>
+                        <option value="Local">Local</option>
+                        <option value="Llamada">Llamada</option>
+                        <option value="Whatsapp">Whatsapp</option>
+                    </select>
+                </td>
+                <td>
+                    <select id="nl-service" class="td-select">
+                        <option value="">Sin definir</option>
+                        <option value="Boda Sencilla">Boda Sencilla</option>
+                        <option value="Boda en Capilla">Boda en Capilla</option>
+                        <option value="Boda a Domicilio">Boda a Domicilio</option>
+                    </select>
+                </td>
+                <td>
+                    <select id="nl-status" class="td-select status-badge badge-nuevo">
+                        <option value="nuevo" selected>Nuevo</option>
+                        <option value="interesado">Interesado</option>
+                        <option value="no interesado">No interesado</option>
+                        <option value="cita local">Cita Local</option>
+                        <option value="pago">Pago</option>
+                        <option value="no contesta">No contesta</option>
+                        <option value="no contactado">No Contactado</option>
+                    </select>
+                </td>
+                <td><input id="nl-seg-date" type="date" class="td-input"></td>
+                <td>
+                    <input id="nl-interaction" list="interaction-opts" type="text" class="td-input" placeholder="Ej: Llamada, WA..."
+                           onfocus="this.dataset.old=this.value; this.value='';" 
+                           onblur="if(!this.value) this.value=this.dataset.old || '';">
+                </td>
+                <td>
+                    <select id="nl-interactions" class="td-select">
+                        <option value="0">Sin contacto (0)</option>
+                        ${Array.from({length: 20}, (_, i) => `<option value="${i+1}">Toque ${i+1}</option>`).join('')}
+                    </select>
+                </td>
+                <td><input id="nl-comments" type="text" class="td-input" placeholder="Comentario inicial..."></td>
+                <td><span class="followup-badge" style="background:var(--bg-dark);color:var(--text-dim);border:1px solid #333;">No Aplica</span></td>
+            `;
+
+            // Action buttons row — appended as last cell via a floating div below the row
+            const actionTd = document.createElement('td');
+            actionTd.style.whiteSpace = 'nowrap';
+            actionTd.innerHTML = `
+                <button onclick="saveNewLeadRow()" style="background:#25d366;border:none;color:#fff;border-radius:10px;padding:8px 14px;font-weight:800;cursor:pointer;margin-right:6px;">✔ Guardar</button>
+                <button onclick="cancelNewLeadRow()" style="background:transparent;border:1px solid var(--border);color:var(--text-dim);border-radius:10px;padding:8px 12px;font-weight:700;cursor:pointer;">✕</button>
+            `;
+            tr.appendChild(actionTd);
+
+            // Insert at top of tbody
+            tbody.insertBefore(tr, tbody.firstChild);
+            document.getElementById('nl-name').focus();
+        }
+
+        function cancelNewLeadRow() {
+            const row = document.getElementById('new-lead-row');
+            if (row) row.remove();
+            const btn = document.getElementById('btn-nuevo-lead');
+            btn.disabled = false;
+            btn.style.opacity = '1';
+        }
+
+        async function saveNewLeadRow() {
+            const name = document.getElementById('nl-name').value.trim();
+            const phone = document.getElementById('nl-phone').value.trim().replace(/[^0-9]/g, '');
+
+            const interactionDate = document.getElementById('nl-seg-date').value;
+            const lastInteraction = document.getElementById('nl-interaction').value;
+            const interactionsCount = parseInt(document.getElementById('nl-interactions').value) || 0;
+            const comments = document.getElementById('nl-comments').value.trim();
+
+            if (!name) { document.getElementById('nl-name').focus(); document.getElementById('nl-name').style.borderColor='var(--danger)'; return; }
+            if (!phone || phone.length < 7) { document.getElementById('nl-phone').focus(); document.getElementById('nl-phone').style.borderColor='var(--danger)'; return; }
+
+            const payload = {
+                name,
+                phone,
+                date: document.getElementById('nl-date').value,
+                channel: document.getElementById('nl-channel').value,
+                service: document.getElementById('nl-service').value,
+                status: document.getElementById('nl-status').value,
+                lastSegDate: interactionDate,
+                lastInteraction,
+                followup_count: interactionsCount,
+                comments
+            };
+
+            try {
+                const res = await fetch('/api/leads/manual', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (res.ok) {
+                    cancelNewLeadRow();
+                    fetchLeads();
+                } else {
+                    const err = await res.json();
+                    alert('Error: ' + (err.error || 'No se pudo guardar'));
+                }
+            } catch (e) {
+                alert('Error de conexión: ' + e.message);
+            }
+        }
+
+        // Keep alias for any remaining references
+        function openNewLeadModal() { showNewLeadRow(); }
+        function closeNewLeadModal() { cancelNewLeadRow(); }
+        function submitNewLead() { saveNewLeadRow(); }
+        // ────────────────────────────────────────────────────────────────────
+
+        fetchLeads();
+        fetchConfig();
+        setInterval(fetchLeads, 30000);
+    </script>
+</body>
+</html>
